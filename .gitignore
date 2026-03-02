@@ -1,0 +1,27 @@
+# Credentials — never commit
+.env
+
+# Runtime output — ignore contents but keep the directory via .gitkeep
+.cache/*
+!.cache/.gitkeep
+runs/*
+!runs/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Tool caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.iml

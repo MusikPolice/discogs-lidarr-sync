@@ -1,0 +1,76 @@
+[project]
+name = "discogs-lidarr-sync"
+version = "0.1.0"
+description = "One-way sync from a Discogs vinyl collection to Lidarr"
+requires-python = ">=3.11"
+dependencies = [
+    "python3-discogs-client>=2.8",
+    "pyarr>=4.0",
+    "musicbrainzngs>=0.7",
+    "python-dotenv>=1.0",
+    "rich>=13.0",
+    "click>=8.1",
+]
+
+[project.scripts]
+discogs-lidarr-sync = "discogs_lidarr_sync.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/discogs_lidarr_sync"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "pytest-recording>=0.13.0",
+    "responses>=0.25.0",
+    "mypy>=1.11.0",
+    "ruff>=0.8.0",
+    "pre-commit>=4.0.0",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff — linting and formatting
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["discogs_lidarr_sync"]
+
+# ---------------------------------------------------------------------------
+# Mypy — strict type checking
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+# These packages ship no type stubs; suppress missing-import errors.
+module = [
+    "discogs_client.*",
+    "pyarr.*",
+    "musicbrainzngs.*",
+]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
