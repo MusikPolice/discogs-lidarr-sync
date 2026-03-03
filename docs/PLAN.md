@@ -519,7 +519,7 @@ Each phase ends at a natural commit boundary. Phases are ordered so that every p
 | Phase | What it produces | External API calls | Status |
 |---|---|---|---|
 | 1 — Scaffolding | Tooling harness, empty stubs | None | ✅ Complete |
-| 2 — Config & Models | Data contract, settings validation | None | 🔄 In progress |
+| 2 — Config & Models | Data contract, settings validation | None | ✅ Complete |
 | 3 — Discogs Client | Collection fetch + vinyl filter | Discogs (mocked in tests) | ⬜ Pending |
 | 4 — MBZ Resolver | ID bridging + on-disk cache | MusicBrainz (mocked in tests) | ⬜ Pending |
 | 5 — Lidarr Client | Read state + add artist/album | Lidarr (mocked in tests) | ⬜ Pending |
