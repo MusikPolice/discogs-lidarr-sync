@@ -1,0 +1,113 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection:
+      - close
+      Content-Length:
+      - '0'
+      Host:
+      - musicbrainz.org
+      User-Agent:
+      - discogs-lidarr-sync/0.1 python-musicbrainzngs/0.7.1
+    method: GET
+    uri: https://musicbrainz.org/ws/2/url/?inc=release-rels&resource=https%3A%2F%2Fwww.discogs.com%2Frelease%2F1873013
+  response:
+    body:
+      string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <metadata xmlns="http://musicbrainz.org/ns/mmd-2.0#"><url id="49af9dc2-196e-42be-bdf6-ea320eaa1dab"><resource>https://www.discogs.com/release/1873013</resource><relation-list
+        target-type="release"><relation type="discogs" type-id="4a78823c-1c53-4176-a5f3-58026c76f2bc"><target>b84ee12a-09ef-421b-82de-0441a926375b</target><direction>backward</direction><release
+        id="b84ee12a-09ef-421b-82de-0441a926375b"><title>The Dark Side of the Moon</title><quality>normal</quality><text-representation><language>eng</language><script>Latn</script></text-representation><date>1973-03-24</date><country>GB</country><release-event-list
+        count="1"><release-event><date>1973-03-24</date><area id="8a754a16-0027-3a29-b6d7-2b40ea0481ed"><name>United
+        Kingdom</name><sort-name>United Kingdom</sort-name><iso-3166-1-code-list><iso-3166-1-code>GB</iso-3166-1-code></iso-3166-1-code-list></area></release-event></release-event-list><barcode/></release></relation></relation-list></url></metadata>
+
+        '
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - close
+      Content-Type:
+      - application/xml; charset=utf-8
+      Date:
+      - Tue, 03 Mar 2026 01:48:52 GMT
+      ETag:
+      - '"43e535d90e602ca45c81804a9403311f"'
+      Server:
+      - Plack::Handler::Starlet
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Cache-Status:
+      - MISS
+      X-RateLimit-Limit:
+      - '1200'
+      X-RateLimit-Remaining:
+      - '876'
+      X-RateLimit-Reset:
+      - '1772502533'
+      X-Runtime:
+      - '0.033650'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Connection:
+      - close
+      Content-Length:
+      - '0'
+      Host:
+      - musicbrainz.org
+      User-Agent:
+      - discogs-lidarr-sync/0.1 python-musicbrainzngs/0.7.1
+    method: GET
+    uri: https://musicbrainz.org/ws/2/release/b84ee12a-09ef-421b-82de-0441a926375b?inc=release-groups
+  response:
+    body:
+      string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <metadata xmlns="http://musicbrainz.org/ns/mmd-2.0#"><release id="b84ee12a-09ef-421b-82de-0441a926375b"><title>The
+        Dark Side of the Moon</title><status id="4e304316-386d-3409-af2e-78857eec5cfe">Official</status><quality>normal</quality><packaging
+        id="e724a489-a7e8-30a1-a17c-30dfd6831202">Gatefold Cover</packaging><text-representation><language>eng</language><script>Latn</script></text-representation><release-group
+        id="f5093c06-23e3-404f-aeaa-40f72885ee3a" type="Album" type-id="f529b476-6e62-324f-b0aa-1f3e33d313fc"><title>The
+        Dark Side of the Moon</title><first-release-date>1973-03-24</first-release-date><primary-type
+        id="f529b476-6e62-324f-b0aa-1f3e33d313fc">Album</primary-type></release-group><date>1973-03-24</date><country>GB</country><release-event-list
+        count="1"><release-event><date>1973-03-24</date><area id="8a754a16-0027-3a29-b6d7-2b40ea0481ed"><name>United
+        Kingdom</name><sort-name>United Kingdom</sort-name><iso-3166-1-code-list><iso-3166-1-code>GB</iso-3166-1-code></iso-3166-1-code-list></area></release-event></release-event-list><barcode/><cover-art-archive><artwork>true</artwork><count>13</count><front>true</front><back>true</back></cover-art-archive></release></metadata>
+
+        '
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - close
+      Content-Type:
+      - application/xml; charset=utf-8
+      Date:
+      - Tue, 03 Mar 2026 01:48:53 GMT
+      ETag:
+      - '"053083a2ec67a9fc76babb5e9641c463"'
+      Server:
+      - Plack::Handler::Starlet
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Cache-Status:
+      - MISS
+      X-RateLimit-Limit:
+      - '1200'
+      X-RateLimit-Remaining:
+      - '531'
+      X-RateLimit-Reset:
+      - '1772502533'
+      X-Runtime:
+      - '0.032634'
+    status:
+      code: 200
+      message: OK
+version: 1
