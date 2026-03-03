@@ -82,3 +82,46 @@ def discogs_credentials() -> dict[str, str]:
             "Set DISCOGS_TOKEN and DISCOGS_USERNAME in .env to run integration tests"
         )
     return {"token": token, "username": username}
+
+
+# ---------------------------------------------------------------------------
+# Lidarr credentials fixtures
+# ---------------------------------------------------------------------------
+
+_LIDARR_REPLAY_URL = "http://localhost:8686"
+
+
+@pytest.fixture
+def lidarr_vcr_credentials() -> dict[str, str]:
+    """Credentials for Lidarr VCR cassette tests.
+
+    - When LIDARR_URL is set (recording locally): the client uses the real
+      URL so vcrpy can make live HTTP calls. before_record_request in the
+      test's vcr_config normalises the URL to localhost:8686 in the cassette.
+    - When LIDARR_URL is unset (CI replay): the client uses localhost:8686,
+      before_playback_request normalises outgoing requests to the same URL,
+      and the cassette intercepts them. No credentials required; never skips.
+
+    To record cassettes:
+        uv run pytest tests/test_lidarr_recorded.py --record-mode=all
+    (requires LIDARR_URL and LIDARR_API_KEY in .env)
+    """
+    url = os.getenv("LIDARR_URL", "").strip() or _LIDARR_REPLAY_URL
+    api_key = os.getenv("LIDARR_API_KEY", "REDACTED").strip()
+    return {"url": url, "api_key": api_key}
+
+
+@pytest.fixture
+def lidarr_credentials() -> dict[str, str]:
+    """Full Lidarr credentials for live integration tests.
+
+    Both LIDARR_URL and LIDARR_API_KEY must be set in .env.
+    Integration tests are always skipped in CI.
+    """
+    url = os.getenv("LIDARR_URL", "").strip()
+    api_key = os.getenv("LIDARR_API_KEY", "").strip()
+    if not url or not api_key:
+        pytest.skip(
+            "Set LIDARR_URL and LIDARR_API_KEY in .env to run Lidarr integration tests"
+        )
+    return {"url": url, "api_key": api_key}
