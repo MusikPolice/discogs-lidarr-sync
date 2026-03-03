@@ -34,4 +34,10 @@ jobs:
         run: uv run mypy src/
 
       - name: Test
+        # DISCOGS_USERNAME enables VCR cassette replay in CI (not a secret — it's
+        # a public profile name).  Set it under repo Settings → Variables → Actions.
+        # VCR tests will be skipped gracefully if this variable is not set.
+        # DISCOGS_TOKEN is intentionally absent from CI; integration tests skip.
+        env:
+          DISCOGS_USERNAME: ${{ vars.DISCOGS_USERNAME }}
         run: uv run pytest --cov=src --cov-report=term-missing

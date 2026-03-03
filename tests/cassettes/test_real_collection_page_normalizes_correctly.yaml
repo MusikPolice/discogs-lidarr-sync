@@ -1,0 +1,308 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip
+      Connection:
+      - keep-alive
+      User-Agent:
+      - discogs-lidarr-sync/test
+    method: GET
+    uri: https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=1&per_page=10
+  response:
+    body:
+      string: '{"pagination":{"page":1,"pages":23,"per_page":10,"items":223,"urls":{"last":"https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=23&per_page=10&sort=label&sort_order=asc","next":"https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=2&per_page=10&sort=label&sort_order=asc"}},"releases":[{"id":10511913,"instance_id":253205614,"date_added":"2017-10-02T16:05:15-07:00","rating":0,"basic_information":{"id":10511913,"master_id":1203385,"master_url":"https://api.discogs.com/masters/1203385","resource_url":"https://api.discogs.com/releases/10511913","thumb":"https://i.discogs.com/VA4ePqD8v9kyHi2cCzNy7Bj6CQ0sxIpfFyihUpDtmtM/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEx/OTEzLTE0OTkxMTA3/OTYtMTA0OS5qcGVn.jpeg","cover_image":"https://i.discogs.com/HwgRSeqbQpjrhDQEyBGuVsx0XtvLeI1bXclbvG6vOqc/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEx/OTEzLTE0OTkxMTA3/OTYtMTA0OS5qcGVn.jpeg","title":"Baby
+        Driver (Music From The Motion Picture)","year":2017,"formats":[{"name":"Vinyl","qty":"2","descriptions":["LP","Compilation","Limited
+        Edition","Stereo"]}],"labels":[{"name":"30th Century Records","catno":"88985
+        44664 1","entity_type":"1","entity_type_name":"Label","id":963358,"resource_url":"https://api.discogs.com/labels/963358"},{"name":"Columbia","catno":"88985
+        44664 1","entity_type":"1","entity_type_name":"Label","id":1866,"resource_url":"https://api.discogs.com/labels/1866"}],"artists":[{"name":"Various","anv":"","join":"","role":"","tracks":"","id":194,"resource_url":"https://api.discogs.com/artists/194"}],"genres":["Rock","Stage
+        & Screen"],"styles":["Soundtrack","Indie Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Mint
+        (M)"},{"field_id":2,"value":"Mint (M)"}]},{"id":6666484,"instance_id":559987650,"date_added":"2021-01-02T11:13:37-08:00","rating":0,"basic_information":{"id":6666484,"master_id":109113,"master_url":"https://api.discogs.com/masters/109113","resource_url":"https://api.discogs.com/releases/6666484","thumb":"https://i.discogs.com/umRExfBlB7gaj989sn1XxDO-T6FFUeK33frxsxukQvY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTY2NjY0/ODQtMTU1OTAzMDE3/Ny01MzQxLmpwZWc.jpeg","cover_image":"https://i.discogs.com/dFZ7Vi9Fe1rm7V05Bg2ZHFG0xhWSl-APDHucvhNH58c/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTY2NjY0/ODQtMTU1OTAzMDE3/Ny01MzQxLmpwZWc.jpeg","title":"Greatest
+        Hits","year":1992,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Compilation"]}],"labels":[{"name":"A&M
+        Records","catno":"540 030-1","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"The
+        Police","anv":"","join":"","role":"","tracks":"","id":7987,"resource_url":"https://api.discogs.com/artists/7987"}],"genres":["Rock"],"styles":["Pop
+        Rock","New Wave","Alternative Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good (VG)"},{"field_id":2,"value":"Very Good Plus (VG+)"}]},{"id":892301,"instance_id":215149887,"date_added":"2017-02-21T13:31:54-08:00","rating":3,"basic_information":{"id":892301,"master_id":37180,"master_url":"https://api.discogs.com/masters/37180","resource_url":"https://api.discogs.com/releases/892301","thumb":"https://i.discogs.com/vTH69LkxpB-CFWSEjwVNc0tzBNxpKYpQ55BlbW5cIDA/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTg5MjMw/MS0xNTIzNjE1MzE3/LTI0OTUuanBlZw.jpeg","cover_image":"https://i.discogs.com/a6qVdTZqvJqR52Vf9xhwe1j4LIdo7BYQPuYqZSz6keA/rs:fit/g:sm/q:90/h:598/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTg5MjMw/MS0xNTIzNjE1MzE3/LTI0OTUuanBlZw.jpeg","title":"Catch
+        Bull At Four","year":1972,"formats":[{"name":"Vinyl","qty":"1","text":"Pitman
+        Pressing, Gatefold","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP 4365","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Cat
+        Stevens","anv":"","join":"","role":"","tracks":"","id":37606,"resource_url":"https://api.discogs.com/artists/37606"}],"genres":["Rock"],"styles":["Acoustic"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good Plus (VG+)"},{"field_id":2,"value":"Very Good (VG)"}]},{"id":1355947,"instance_id":221651167,"date_added":"2017-03-27T23:39:02-07:00","rating":5,"basic_information":{"id":1355947,"master_id":25362,"master_url":"https://api.discogs.com/masters/25362","resource_url":"https://api.discogs.com/releases/1355947","thumb":"https://i.discogs.com/4jCP_dDQuXHFPW4-g9QgGPTuY7nMYqxsAhd_lBKT02o/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEzNTU5/NDctMTMwMzI0NzYz/Mi5qcGVn.jpeg","cover_image":"https://i.discogs.com/-YTH_uGopW40r3kDWXcDSk39HaXphVvvFGSRCok5LdQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEzNTU5/NDctMTMwMzI0NzYz/Mi5qcGVn.jpeg","title":"Breakfast
+        In America","year":1979,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-3708","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Supertramp","anv":"","join":"","role":"","tracks":"","id":251517,"resource_url":"https://api.discogs.com/artists/251517"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Fair (F)"},{"field_id":2,"value":"Good
+        Plus (G+)"}]},{"id":2723154,"instance_id":218179270,"date_added":"2017-03-09T03:03:37-08:00","rating":2,"basic_information":{"id":2723154,"master_id":39248,"master_url":"https://api.discogs.com/masters/39248","resource_url":"https://api.discogs.com/releases/2723154","thumb":"https://i.discogs.com/rAbmDbcaieWQ8zGFzGjx0SdO19SpqO5lz4k1FulMq9E/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI3MjMx/NTQtMTM0Mjg5NDQ5/MC03NTAzLmpwZWc.jpeg","cover_image":"https://i.discogs.com/CZ1AFAOtOXwlDOAqbOhVU48XENBzwDm9UiKgN6CYCKM/rs:fit/g:sm/q:90/h:595/w:576/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI3MjMx/NTQtMTM0Mjg5NDQ5/MC03NTAzLmpwZWc.jpeg","title":"Synchronicity","year":1983,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-3735","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"The
+        Police","anv":"","join":"","role":"","tracks":"","id":7987,"resource_url":"https://api.discogs.com/artists/7987"}],"genres":["Rock"],"styles":["New
+        Wave","Pop Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Good (G)"},{"field_id":2,"value":"Very
+        Good (VG)"}]},{"id":10512072,"instance_id":238322341,"date_added":"2017-07-04T20:45:20-07:00","rating":2,"basic_information":{"id":10512072,"master_id":62389,"master_url":"https://api.discogs.com/masters/62389","resource_url":"https://api.discogs.com/releases/10512072","thumb":"https://i.discogs.com/aGmGo-GuWGJLIflpL6ZkLyhPPy9DfRZS53_X5CnWWFs/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEy/MDcyLTE0OTg5NjI5/ODUtNDQ5OS5qcGVn.jpeg","cover_image":"https://i.discogs.com/8aEhJRRSsh74oRz_PwJuLxgeCt0lWmTLk9yM2oGPTgA/rs:fit/g:sm/q:90/h:598/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEy/MDcyLTE0OTg5NjI5/ODUtNDQ5OS5qcGVn.jpeg","title":"Feels
+        So Good","year":1977,"formats":[{"name":"Vinyl","qty":"1","text":"PRC-Richmond
+        Pressing","descriptions":["LP","Album"]}],"labels":[{"name":"A&M Records","catno":"SP-4658","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Chuck
+        Mangione","anv":"","join":"","role":"","tracks":"","id":92051,"resource_url":"https://api.discogs.com/artists/92051"}],"genres":["Jazz"],"styles":["Smooth
+        Jazz","Contemporary Jazz","Soul-Jazz"]},"folder_id":1,"notes":[{"field_id":1,"value":"Near
+        Mint (NM or M-)"},{"field_id":2,"value":"Very Good (VG)"}]},{"id":1428717,"instance_id":221651024,"date_added":"2017-03-27T23:37:51-07:00","rating":1,"basic_information":{"id":1428717,"master_id":67524,"master_url":"https://api.discogs.com/masters/67524","resource_url":"https://api.discogs.com/releases/1428717","thumb":"https://i.discogs.com/GuAbPmmzrVXOccFOiCDFr5B3ZRwsoojRhS6ohqAY0wk/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0Mjg3/MTctMTM3NjUwNDY3/Mi05NzU4LmpwZWc.jpeg","cover_image":"https://i.discogs.com/XW1WBKUd7wgERI4gAlBX-edM7W3w8tQj5NU1-h57FZ4/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0Mjg3/MTctMTM3NjUwNDY3/Mi05NzU4LmpwZWc.jpeg","title":"Pieces
+        Of Eight","year":1978,"formats":[{"name":"Vinyl","qty":"1","text":"Pitman
+        Pressing, Gatefold","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-4724","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Styx","anv":"","join":"","role":"","tracks":"","id":218605,"resource_url":"https://api.discogs.com/artists/218605"}],"genres":["Rock"],"styles":["Hard
+        Rock","Prog Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very Good
+        Plus (VG+)"},{"field_id":2,"value":"Very Good Plus (VG+)"}]},{"id":755258,"instance_id":215150176,"date_added":"2017-02-21T13:34:30-08:00","rating":3,"basic_information":{"id":755258,"master_id":37103,"master_url":"https://api.discogs.com/masters/37103","resource_url":"https://api.discogs.com/releases/755258","thumb":"https://i.discogs.com/q10JZynCO0nNIm12o_M3ghP6rk7wjNH7uZb6aBsDumY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTc1NTI1/OC0xMTk2MTk0MDA0/LmpwZWc.jpeg","cover_image":"https://i.discogs.com/6KSuCG-YHrJ023zoh7sXrU0aNVEHFrmvZTWHu5SVlSc/rs:fit/g:sm/q:90/h:400/w:400/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTc1NTI1/OC0xMTk2MTk0MDA0/LmpwZWc.jpeg","title":"Tea
+        For The Tillerman","year":1970,"formats":[{"name":"Vinyl","qty":"1","text":"Monarch
+        Pressing","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP 4280","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"A&M
+        Records","catno":"SP-4280","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Cat
+        Stevens","anv":"","join":"","role":"","tracks":"","id":37606,"resource_url":"https://api.discogs.com/artists/37606"}],"genres":["Rock"],"styles":["Folk
+        Rock","Acoustic","Pop Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good (VG)"},{"field_id":2,"value":"Good Plus (G+)"}]},{"id":1649042,"instance_id":221651502,"date_added":"2017-03-27T23:42:01-07:00","rating":4,"basic_information":{"id":1649042,"master_id":25381,"master_url":"https://api.discogs.com/masters/25381","resource_url":"https://api.discogs.com/releases/1649042","thumb":"https://i.discogs.com/UmiuqppCcJ4Dxbsq4b91MPK5i5YHnjyT-djWXy4NmYY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE2NDkw/NDItMTMwMzI0NDgx/OC5qcGVn.jpeg","cover_image":"https://i.discogs.com/_kOLUiSVuUHmLWlbXu38HhZqnZ8FU3HCmREUGriKmZk/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE2NDkw/NDItMTMwMzI0NDgx/OC5qcGVn.jpeg","title":"Even
+        In The Quietest Moments...","year":1977,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-4634","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"A&M
+        Records","catno":"SP 4634","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Supertramp","anv":"","join":"","role":"","tracks":"","id":251517,"resource_url":"https://api.discogs.com/artists/251517"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Near Mint (NM or M-)"},{"field_id":2,"value":"Very
+        Good (VG)"}]},{"id":6275103,"instance_id":1455830692,"date_added":"2023-09-11T14:16:16-07:00","rating":0,"basic_information":{"id":6275103,"master_id":13280,"master_url":"https://api.discogs.com/masters/13280","resource_url":"https://api.discogs.com/releases/6275103","thumb":"https://i.discogs.com/TtRzgNLBwtNKIHp2DO-PazqTC0kHHvOhdCe-S-75bWI/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTYyNzUx/MDMtMTQxNTcxMTM3/MC0yOTU0LmpwZWc.jpeg","cover_image":"https://i.discogs.com/kfrPpmVa2W0mPCJ095aY-d4k1t1RVS40QGLvhe8uIZQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTYyNzUx/MDMtMTQxNTcxMTM3/MC0yOTU0LmpwZWc.jpeg","title":"Reckless","year":2014,"formats":[{"name":"Vinyl","qty":"2","descriptions":["LP","Album","Reissue"]},{"name":"Vinyl","qty":"1","descriptions":["LP"]}],"labels":[{"name":"A&M
+        Records","catno":"378 305-9","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"UMe","catno":"006002537830596","entity_type":"1","entity_type_name":"Label","id":68029,"resource_url":"https://api.discogs.com/labels/68029"}],"artists":[{"name":"Bryan
+        Adams","anv":"","join":"","role":"","tracks":"","id":10933,"resource_url":"https://api.discogs.com/artists/10933"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Mint (M)"},{"field_id":2,"value":"Mint
+        (M)"}]}]}'
+    headers:
+      CF-RAY:
+      - 9d64e25d8af4130e-YYZ
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Mar 2026 01:31:54 GMT
+      Server:
+      - cloudflare
+      Set-Cookie:
+      - __cf_bm=cs4y29w1JKIKN.JXH84clXFkHOuiLVqvdeW8lPU.7Hs-1772501514-1.0.1.1-w8IsRCZVxM8aJCSy2vQ3wkxzK1e6.MwHK6DYtkrac3db288DMSqBdz7gIcdjCaDhOAgGfxU.vYMmcDqPUjiVW50xvblxpxu6JmUlluZhngs;
+        path=/; expires=Tue, 03-Mar-26 02:01:54 GMT; domain=.discogs.com; HttpOnly;
+        Secure; SameSite=None
+      Transfer-Encoding:
+      - chunked
+      alt-svc:
+      - h3=":443"; ma=86400
+      cf-cache-status:
+      - DYNAMIC
+      strict-transport-security:
+      - max-age=15552000
+      vary:
+      - Accept-Encoding
+      x-discogs-ratelimit:
+      - '60'
+      x-discogs-ratelimit-remaining:
+      - '60'
+      x-discogs-ratelimit-used:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip
+      Connection:
+      - keep-alive
+      User-Agent:
+      - discogs-lidarr-sync/test
+    method: GET
+    uri: https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=1&per_page=10
+  response:
+    body:
+      string: '{"pagination":{"page":1,"pages":23,"per_page":10,"items":223,"urls":{"last":"https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=23&per_page=10&sort=label&sort_order=asc","next":"https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=2&per_page=10&sort=label&sort_order=asc"}},"releases":[{"id":10511913,"instance_id":253205614,"date_added":"2017-10-02T16:05:15-07:00","rating":0,"basic_information":{"id":10511913,"master_id":1203385,"master_url":"https://api.discogs.com/masters/1203385","resource_url":"https://api.discogs.com/releases/10511913","thumb":"https://i.discogs.com/VA4ePqD8v9kyHi2cCzNy7Bj6CQ0sxIpfFyihUpDtmtM/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEx/OTEzLTE0OTkxMTA3/OTYtMTA0OS5qcGVn.jpeg","cover_image":"https://i.discogs.com/HwgRSeqbQpjrhDQEyBGuVsx0XtvLeI1bXclbvG6vOqc/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEx/OTEzLTE0OTkxMTA3/OTYtMTA0OS5qcGVn.jpeg","title":"Baby
+        Driver (Music From The Motion Picture)","year":2017,"formats":[{"name":"Vinyl","qty":"2","descriptions":["LP","Compilation","Limited
+        Edition","Stereo"]}],"labels":[{"name":"30th Century Records","catno":"88985
+        44664 1","entity_type":"1","entity_type_name":"Label","id":963358,"resource_url":"https://api.discogs.com/labels/963358"},{"name":"Columbia","catno":"88985
+        44664 1","entity_type":"1","entity_type_name":"Label","id":1866,"resource_url":"https://api.discogs.com/labels/1866"}],"artists":[{"name":"Various","anv":"","join":"","role":"","tracks":"","id":194,"resource_url":"https://api.discogs.com/artists/194"}],"genres":["Rock","Stage
+        & Screen"],"styles":["Soundtrack","Indie Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Mint
+        (M)"},{"field_id":2,"value":"Mint (M)"}]},{"id":6666484,"instance_id":559987650,"date_added":"2021-01-02T11:13:37-08:00","rating":0,"basic_information":{"id":6666484,"master_id":109113,"master_url":"https://api.discogs.com/masters/109113","resource_url":"https://api.discogs.com/releases/6666484","thumb":"https://i.discogs.com/umRExfBlB7gaj989sn1XxDO-T6FFUeK33frxsxukQvY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTY2NjY0/ODQtMTU1OTAzMDE3/Ny01MzQxLmpwZWc.jpeg","cover_image":"https://i.discogs.com/dFZ7Vi9Fe1rm7V05Bg2ZHFG0xhWSl-APDHucvhNH58c/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTY2NjY0/ODQtMTU1OTAzMDE3/Ny01MzQxLmpwZWc.jpeg","title":"Greatest
+        Hits","year":1992,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Compilation"]}],"labels":[{"name":"A&M
+        Records","catno":"540 030-1","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"The
+        Police","anv":"","join":"","role":"","tracks":"","id":7987,"resource_url":"https://api.discogs.com/artists/7987"}],"genres":["Rock"],"styles":["Pop
+        Rock","New Wave","Alternative Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good (VG)"},{"field_id":2,"value":"Very Good Plus (VG+)"}]},{"id":892301,"instance_id":215149887,"date_added":"2017-02-21T13:31:54-08:00","rating":3,"basic_information":{"id":892301,"master_id":37180,"master_url":"https://api.discogs.com/masters/37180","resource_url":"https://api.discogs.com/releases/892301","thumb":"https://i.discogs.com/vTH69LkxpB-CFWSEjwVNc0tzBNxpKYpQ55BlbW5cIDA/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTg5MjMw/MS0xNTIzNjE1MzE3/LTI0OTUuanBlZw.jpeg","cover_image":"https://i.discogs.com/a6qVdTZqvJqR52Vf9xhwe1j4LIdo7BYQPuYqZSz6keA/rs:fit/g:sm/q:90/h:598/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTg5MjMw/MS0xNTIzNjE1MzE3/LTI0OTUuanBlZw.jpeg","title":"Catch
+        Bull At Four","year":1972,"formats":[{"name":"Vinyl","qty":"1","text":"Pitman
+        Pressing, Gatefold","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP 4365","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Cat
+        Stevens","anv":"","join":"","role":"","tracks":"","id":37606,"resource_url":"https://api.discogs.com/artists/37606"}],"genres":["Rock"],"styles":["Acoustic"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good Plus (VG+)"},{"field_id":2,"value":"Very Good (VG)"}]},{"id":1355947,"instance_id":221651167,"date_added":"2017-03-27T23:39:02-07:00","rating":5,"basic_information":{"id":1355947,"master_id":25362,"master_url":"https://api.discogs.com/masters/25362","resource_url":"https://api.discogs.com/releases/1355947","thumb":"https://i.discogs.com/4jCP_dDQuXHFPW4-g9QgGPTuY7nMYqxsAhd_lBKT02o/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEzNTU5/NDctMTMwMzI0NzYz/Mi5qcGVn.jpeg","cover_image":"https://i.discogs.com/-YTH_uGopW40r3kDWXcDSk39HaXphVvvFGSRCok5LdQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEzNTU5/NDctMTMwMzI0NzYz/Mi5qcGVn.jpeg","title":"Breakfast
+        In America","year":1979,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-3708","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Supertramp","anv":"","join":"","role":"","tracks":"","id":251517,"resource_url":"https://api.discogs.com/artists/251517"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Fair (F)"},{"field_id":2,"value":"Good
+        Plus (G+)"}]},{"id":2723154,"instance_id":218179270,"date_added":"2017-03-09T03:03:37-08:00","rating":2,"basic_information":{"id":2723154,"master_id":39248,"master_url":"https://api.discogs.com/masters/39248","resource_url":"https://api.discogs.com/releases/2723154","thumb":"https://i.discogs.com/rAbmDbcaieWQ8zGFzGjx0SdO19SpqO5lz4k1FulMq9E/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI3MjMx/NTQtMTM0Mjg5NDQ5/MC03NTAzLmpwZWc.jpeg","cover_image":"https://i.discogs.com/CZ1AFAOtOXwlDOAqbOhVU48XENBzwDm9UiKgN6CYCKM/rs:fit/g:sm/q:90/h:595/w:576/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI3MjMx/NTQtMTM0Mjg5NDQ5/MC03NTAzLmpwZWc.jpeg","title":"Synchronicity","year":1983,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-3735","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"The
+        Police","anv":"","join":"","role":"","tracks":"","id":7987,"resource_url":"https://api.discogs.com/artists/7987"}],"genres":["Rock"],"styles":["New
+        Wave","Pop Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Good (G)"},{"field_id":2,"value":"Very
+        Good (VG)"}]},{"id":10512072,"instance_id":238322341,"date_added":"2017-07-04T20:45:20-07:00","rating":2,"basic_information":{"id":10512072,"master_id":62389,"master_url":"https://api.discogs.com/masters/62389","resource_url":"https://api.discogs.com/releases/10512072","thumb":"https://i.discogs.com/aGmGo-GuWGJLIflpL6ZkLyhPPy9DfRZS53_X5CnWWFs/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEy/MDcyLTE0OTg5NjI5/ODUtNDQ5OS5qcGVn.jpeg","cover_image":"https://i.discogs.com/8aEhJRRSsh74oRz_PwJuLxgeCt0lWmTLk9yM2oGPTgA/rs:fit/g:sm/q:90/h:598/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEy/MDcyLTE0OTg5NjI5/ODUtNDQ5OS5qcGVn.jpeg","title":"Feels
+        So Good","year":1977,"formats":[{"name":"Vinyl","qty":"1","text":"PRC-Richmond
+        Pressing","descriptions":["LP","Album"]}],"labels":[{"name":"A&M Records","catno":"SP-4658","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Chuck
+        Mangione","anv":"","join":"","role":"","tracks":"","id":92051,"resource_url":"https://api.discogs.com/artists/92051"}],"genres":["Jazz"],"styles":["Smooth
+        Jazz","Contemporary Jazz","Soul-Jazz"]},"folder_id":1,"notes":[{"field_id":1,"value":"Near
+        Mint (NM or M-)"},{"field_id":2,"value":"Very Good (VG)"}]},{"id":1428717,"instance_id":221651024,"date_added":"2017-03-27T23:37:51-07:00","rating":1,"basic_information":{"id":1428717,"master_id":67524,"master_url":"https://api.discogs.com/masters/67524","resource_url":"https://api.discogs.com/releases/1428717","thumb":"https://i.discogs.com/GuAbPmmzrVXOccFOiCDFr5B3ZRwsoojRhS6ohqAY0wk/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0Mjg3/MTctMTM3NjUwNDY3/Mi05NzU4LmpwZWc.jpeg","cover_image":"https://i.discogs.com/XW1WBKUd7wgERI4gAlBX-edM7W3w8tQj5NU1-h57FZ4/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0Mjg3/MTctMTM3NjUwNDY3/Mi05NzU4LmpwZWc.jpeg","title":"Pieces
+        Of Eight","year":1978,"formats":[{"name":"Vinyl","qty":"1","text":"Pitman
+        Pressing, Gatefold","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-4724","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Styx","anv":"","join":"","role":"","tracks":"","id":218605,"resource_url":"https://api.discogs.com/artists/218605"}],"genres":["Rock"],"styles":["Hard
+        Rock","Prog Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very Good
+        Plus (VG+)"},{"field_id":2,"value":"Very Good Plus (VG+)"}]},{"id":755258,"instance_id":215150176,"date_added":"2017-02-21T13:34:30-08:00","rating":3,"basic_information":{"id":755258,"master_id":37103,"master_url":"https://api.discogs.com/masters/37103","resource_url":"https://api.discogs.com/releases/755258","thumb":"https://i.discogs.com/q10JZynCO0nNIm12o_M3ghP6rk7wjNH7uZb6aBsDumY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTc1NTI1/OC0xMTk2MTk0MDA0/LmpwZWc.jpeg","cover_image":"https://i.discogs.com/6KSuCG-YHrJ023zoh7sXrU0aNVEHFrmvZTWHu5SVlSc/rs:fit/g:sm/q:90/h:400/w:400/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTc1NTI1/OC0xMTk2MTk0MDA0/LmpwZWc.jpeg","title":"Tea
+        For The Tillerman","year":1970,"formats":[{"name":"Vinyl","qty":"1","text":"Monarch
+        Pressing","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP 4280","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"A&M
+        Records","catno":"SP-4280","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Cat
+        Stevens","anv":"","join":"","role":"","tracks":"","id":37606,"resource_url":"https://api.discogs.com/artists/37606"}],"genres":["Rock"],"styles":["Folk
+        Rock","Acoustic","Pop Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good (VG)"},{"field_id":2,"value":"Good Plus (G+)"}]},{"id":1649042,"instance_id":221651502,"date_added":"2017-03-27T23:42:01-07:00","rating":4,"basic_information":{"id":1649042,"master_id":25381,"master_url":"https://api.discogs.com/masters/25381","resource_url":"https://api.discogs.com/releases/1649042","thumb":"https://i.discogs.com/UmiuqppCcJ4Dxbsq4b91MPK5i5YHnjyT-djWXy4NmYY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE2NDkw/NDItMTMwMzI0NDgx/OC5qcGVn.jpeg","cover_image":"https://i.discogs.com/_kOLUiSVuUHmLWlbXu38HhZqnZ8FU3HCmREUGriKmZk/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE2NDkw/NDItMTMwMzI0NDgx/OC5qcGVn.jpeg","title":"Even
+        In The Quietest Moments...","year":1977,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-4634","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"A&M
+        Records","catno":"SP 4634","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Supertramp","anv":"","join":"","role":"","tracks":"","id":251517,"resource_url":"https://api.discogs.com/artists/251517"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Near Mint (NM or M-)"},{"field_id":2,"value":"Very
+        Good (VG)"}]},{"id":6275103,"instance_id":1455830692,"date_added":"2023-09-11T14:16:16-07:00","rating":0,"basic_information":{"id":6275103,"master_id":13280,"master_url":"https://api.discogs.com/masters/13280","resource_url":"https://api.discogs.com/releases/6275103","thumb":"https://i.discogs.com/TtRzgNLBwtNKIHp2DO-PazqTC0kHHvOhdCe-S-75bWI/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTYyNzUx/MDMtMTQxNTcxMTM3/MC0yOTU0LmpwZWc.jpeg","cover_image":"https://i.discogs.com/kfrPpmVa2W0mPCJ095aY-d4k1t1RVS40QGLvhe8uIZQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTYyNzUx/MDMtMTQxNTcxMTM3/MC0yOTU0LmpwZWc.jpeg","title":"Reckless","year":2014,"formats":[{"name":"Vinyl","qty":"2","descriptions":["LP","Album","Reissue"]},{"name":"Vinyl","qty":"1","descriptions":["LP"]}],"labels":[{"name":"A&M
+        Records","catno":"378 305-9","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"UMe","catno":"006002537830596","entity_type":"1","entity_type_name":"Label","id":68029,"resource_url":"https://api.discogs.com/labels/68029"}],"artists":[{"name":"Bryan
+        Adams","anv":"","join":"","role":"","tracks":"","id":10933,"resource_url":"https://api.discogs.com/artists/10933"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Mint (M)"},{"field_id":2,"value":"Mint
+        (M)"}]}]}'
+    headers:
+      CF-RAY:
+      - 9d64e3a3dbfcebb4-YYZ
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Mar 2026 01:32:46 GMT
+      Server:
+      - cloudflare
+      Set-Cookie:
+      - __cf_bm=up3kDY5gBBB5CRVeYjrvPWO2QjIG4R.p4sX325ism5w-1772501566-1.0.1.1-oioAsw6Lz9BklpNurNxn1F2wnw_aklP96Xah.WcKiAaU.WzHdhFggL91jXB96GCk65vBcaxxvOITB8UB8lbhOlW.hHqUzpv6g0q6WH6hAXo;
+        path=/; expires=Tue, 03-Mar-26 02:02:46 GMT; domain=.discogs.com; HttpOnly;
+        Secure; SameSite=None
+      Transfer-Encoding:
+      - chunked
+      alt-svc:
+      - h3=":443"; ma=86400
+      cf-cache-status:
+      - DYNAMIC
+      strict-transport-security:
+      - max-age=15552000
+      vary:
+      - Accept-Encoding
+      x-discogs-ratelimit:
+      - '60'
+      x-discogs-ratelimit-remaining:
+      - '60'
+      x-discogs-ratelimit-used:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip
+      Connection:
+      - keep-alive
+      User-Agent:
+      - discogs-lidarr-sync/test
+    method: GET
+    uri: https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=1&per_page=10
+  response:
+    body:
+      string: '{"pagination":{"page":1,"pages":23,"per_page":10,"items":223,"urls":{"last":"https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=23&per_page=10&sort=label&sort_order=asc","next":"https://api.discogs.com/users/MusikPolice/collection/folders/0/releases?page=2&per_page=10&sort=label&sort_order=asc"}},"releases":[{"id":10511913,"instance_id":253205614,"date_added":"2017-10-02T16:05:15-07:00","rating":0,"basic_information":{"id":10511913,"master_id":1203385,"master_url":"https://api.discogs.com/masters/1203385","resource_url":"https://api.discogs.com/releases/10511913","thumb":"https://i.discogs.com/VA4ePqD8v9kyHi2cCzNy7Bj6CQ0sxIpfFyihUpDtmtM/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEx/OTEzLTE0OTkxMTA3/OTYtMTA0OS5qcGVn.jpeg","cover_image":"https://i.discogs.com/HwgRSeqbQpjrhDQEyBGuVsx0XtvLeI1bXclbvG6vOqc/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEx/OTEzLTE0OTkxMTA3/OTYtMTA0OS5qcGVn.jpeg","title":"Baby
+        Driver (Music From The Motion Picture)","year":2017,"formats":[{"name":"Vinyl","qty":"2","descriptions":["LP","Compilation","Limited
+        Edition","Stereo"]}],"labels":[{"name":"30th Century Records","catno":"88985
+        44664 1","entity_type":"1","entity_type_name":"Label","id":963358,"resource_url":"https://api.discogs.com/labels/963358"},{"name":"Columbia","catno":"88985
+        44664 1","entity_type":"1","entity_type_name":"Label","id":1866,"resource_url":"https://api.discogs.com/labels/1866"}],"artists":[{"name":"Various","anv":"","join":"","role":"","tracks":"","id":194,"resource_url":"https://api.discogs.com/artists/194"}],"genres":["Rock","Stage
+        & Screen"],"styles":["Soundtrack","Indie Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Mint
+        (M)"},{"field_id":2,"value":"Mint (M)"}]},{"id":6666484,"instance_id":559987650,"date_added":"2021-01-02T11:13:37-08:00","rating":0,"basic_information":{"id":6666484,"master_id":109113,"master_url":"https://api.discogs.com/masters/109113","resource_url":"https://api.discogs.com/releases/6666484","thumb":"https://i.discogs.com/umRExfBlB7gaj989sn1XxDO-T6FFUeK33frxsxukQvY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTY2NjY0/ODQtMTU1OTAzMDE3/Ny01MzQxLmpwZWc.jpeg","cover_image":"https://i.discogs.com/dFZ7Vi9Fe1rm7V05Bg2ZHFG0xhWSl-APDHucvhNH58c/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTY2NjY0/ODQtMTU1OTAzMDE3/Ny01MzQxLmpwZWc.jpeg","title":"Greatest
+        Hits","year":1992,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Compilation"]}],"labels":[{"name":"A&M
+        Records","catno":"540 030-1","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"The
+        Police","anv":"","join":"","role":"","tracks":"","id":7987,"resource_url":"https://api.discogs.com/artists/7987"}],"genres":["Rock"],"styles":["Pop
+        Rock","New Wave","Alternative Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good (VG)"},{"field_id":2,"value":"Very Good Plus (VG+)"}]},{"id":892301,"instance_id":215149887,"date_added":"2017-02-21T13:31:54-08:00","rating":3,"basic_information":{"id":892301,"master_id":37180,"master_url":"https://api.discogs.com/masters/37180","resource_url":"https://api.discogs.com/releases/892301","thumb":"https://i.discogs.com/vTH69LkxpB-CFWSEjwVNc0tzBNxpKYpQ55BlbW5cIDA/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTg5MjMw/MS0xNTIzNjE1MzE3/LTI0OTUuanBlZw.jpeg","cover_image":"https://i.discogs.com/a6qVdTZqvJqR52Vf9xhwe1j4LIdo7BYQPuYqZSz6keA/rs:fit/g:sm/q:90/h:598/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTg5MjMw/MS0xNTIzNjE1MzE3/LTI0OTUuanBlZw.jpeg","title":"Catch
+        Bull At Four","year":1972,"formats":[{"name":"Vinyl","qty":"1","text":"Pitman
+        Pressing, Gatefold","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP 4365","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Cat
+        Stevens","anv":"","join":"","role":"","tracks":"","id":37606,"resource_url":"https://api.discogs.com/artists/37606"}],"genres":["Rock"],"styles":["Acoustic"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good Plus (VG+)"},{"field_id":2,"value":"Very Good (VG)"}]},{"id":1355947,"instance_id":221651167,"date_added":"2017-03-27T23:39:02-07:00","rating":5,"basic_information":{"id":1355947,"master_id":25362,"master_url":"https://api.discogs.com/masters/25362","resource_url":"https://api.discogs.com/releases/1355947","thumb":"https://i.discogs.com/4jCP_dDQuXHFPW4-g9QgGPTuY7nMYqxsAhd_lBKT02o/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEzNTU5/NDctMTMwMzI0NzYz/Mi5qcGVn.jpeg","cover_image":"https://i.discogs.com/-YTH_uGopW40r3kDWXcDSk39HaXphVvvFGSRCok5LdQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEzNTU5/NDctMTMwMzI0NzYz/Mi5qcGVn.jpeg","title":"Breakfast
+        In America","year":1979,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-3708","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Supertramp","anv":"","join":"","role":"","tracks":"","id":251517,"resource_url":"https://api.discogs.com/artists/251517"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Fair (F)"},{"field_id":2,"value":"Good
+        Plus (G+)"}]},{"id":2723154,"instance_id":218179270,"date_added":"2017-03-09T03:03:37-08:00","rating":2,"basic_information":{"id":2723154,"master_id":39248,"master_url":"https://api.discogs.com/masters/39248","resource_url":"https://api.discogs.com/releases/2723154","thumb":"https://i.discogs.com/rAbmDbcaieWQ8zGFzGjx0SdO19SpqO5lz4k1FulMq9E/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI3MjMx/NTQtMTM0Mjg5NDQ5/MC03NTAzLmpwZWc.jpeg","cover_image":"https://i.discogs.com/CZ1AFAOtOXwlDOAqbOhVU48XENBzwDm9UiKgN6CYCKM/rs:fit/g:sm/q:90/h:595/w:576/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI3MjMx/NTQtMTM0Mjg5NDQ5/MC03NTAzLmpwZWc.jpeg","title":"Synchronicity","year":1983,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-3735","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"The
+        Police","anv":"","join":"","role":"","tracks":"","id":7987,"resource_url":"https://api.discogs.com/artists/7987"}],"genres":["Rock"],"styles":["New
+        Wave","Pop Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Good (G)"},{"field_id":2,"value":"Very
+        Good (VG)"}]},{"id":10512072,"instance_id":238322341,"date_added":"2017-07-04T20:45:20-07:00","rating":2,"basic_information":{"id":10512072,"master_id":62389,"master_url":"https://api.discogs.com/masters/62389","resource_url":"https://api.discogs.com/releases/10512072","thumb":"https://i.discogs.com/aGmGo-GuWGJLIflpL6ZkLyhPPy9DfRZS53_X5CnWWFs/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEy/MDcyLTE0OTg5NjI5/ODUtNDQ5OS5qcGVn.jpeg","cover_image":"https://i.discogs.com/8aEhJRRSsh74oRz_PwJuLxgeCt0lWmTLk9yM2oGPTgA/rs:fit/g:sm/q:90/h:598/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEwNTEy/MDcyLTE0OTg5NjI5/ODUtNDQ5OS5qcGVn.jpeg","title":"Feels
+        So Good","year":1977,"formats":[{"name":"Vinyl","qty":"1","text":"PRC-Richmond
+        Pressing","descriptions":["LP","Album"]}],"labels":[{"name":"A&M Records","catno":"SP-4658","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Chuck
+        Mangione","anv":"","join":"","role":"","tracks":"","id":92051,"resource_url":"https://api.discogs.com/artists/92051"}],"genres":["Jazz"],"styles":["Smooth
+        Jazz","Contemporary Jazz","Soul-Jazz"]},"folder_id":1,"notes":[{"field_id":1,"value":"Near
+        Mint (NM or M-)"},{"field_id":2,"value":"Very Good (VG)"}]},{"id":1428717,"instance_id":221651024,"date_added":"2017-03-27T23:37:51-07:00","rating":1,"basic_information":{"id":1428717,"master_id":67524,"master_url":"https://api.discogs.com/masters/67524","resource_url":"https://api.discogs.com/releases/1428717","thumb":"https://i.discogs.com/GuAbPmmzrVXOccFOiCDFr5B3ZRwsoojRhS6ohqAY0wk/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0Mjg3/MTctMTM3NjUwNDY3/Mi05NzU4LmpwZWc.jpeg","cover_image":"https://i.discogs.com/XW1WBKUd7wgERI4gAlBX-edM7W3w8tQj5NU1-h57FZ4/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0Mjg3/MTctMTM3NjUwNDY3/Mi05NzU4LmpwZWc.jpeg","title":"Pieces
+        Of Eight","year":1978,"formats":[{"name":"Vinyl","qty":"1","text":"Pitman
+        Pressing, Gatefold","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-4724","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Styx","anv":"","join":"","role":"","tracks":"","id":218605,"resource_url":"https://api.discogs.com/artists/218605"}],"genres":["Rock"],"styles":["Hard
+        Rock","Prog Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very Good
+        Plus (VG+)"},{"field_id":2,"value":"Very Good Plus (VG+)"}]},{"id":755258,"instance_id":215150176,"date_added":"2017-02-21T13:34:30-08:00","rating":3,"basic_information":{"id":755258,"master_id":37103,"master_url":"https://api.discogs.com/masters/37103","resource_url":"https://api.discogs.com/releases/755258","thumb":"https://i.discogs.com/q10JZynCO0nNIm12o_M3ghP6rk7wjNH7uZb6aBsDumY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTc1NTI1/OC0xMTk2MTk0MDA0/LmpwZWc.jpeg","cover_image":"https://i.discogs.com/6KSuCG-YHrJ023zoh7sXrU0aNVEHFrmvZTWHu5SVlSc/rs:fit/g:sm/q:90/h:400/w:400/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTc1NTI1/OC0xMTk2MTk0MDA0/LmpwZWc.jpeg","title":"Tea
+        For The Tillerman","year":1970,"formats":[{"name":"Vinyl","qty":"1","text":"Monarch
+        Pressing","descriptions":["LP","Album","Stereo"]}],"labels":[{"name":"A&M
+        Records","catno":"SP 4280","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"A&M
+        Records","catno":"SP-4280","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Cat
+        Stevens","anv":"","join":"","role":"","tracks":"","id":37606,"resource_url":"https://api.discogs.com/artists/37606"}],"genres":["Rock"],"styles":["Folk
+        Rock","Acoustic","Pop Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Very
+        Good (VG)"},{"field_id":2,"value":"Good Plus (G+)"}]},{"id":1649042,"instance_id":221651502,"date_added":"2017-03-27T23:42:01-07:00","rating":4,"basic_information":{"id":1649042,"master_id":25381,"master_url":"https://api.discogs.com/masters/25381","resource_url":"https://api.discogs.com/releases/1649042","thumb":"https://i.discogs.com/UmiuqppCcJ4Dxbsq4b91MPK5i5YHnjyT-djWXy4NmYY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE2NDkw/NDItMTMwMzI0NDgx/OC5qcGVn.jpeg","cover_image":"https://i.discogs.com/_kOLUiSVuUHmLWlbXu38HhZqnZ8FU3HCmREUGriKmZk/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE2NDkw/NDItMTMwMzI0NDgx/OC5qcGVn.jpeg","title":"Even
+        In The Quietest Moments...","year":1977,"formats":[{"name":"Vinyl","qty":"1","descriptions":["LP","Album"]}],"labels":[{"name":"A&M
+        Records","catno":"SP-4634","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"A&M
+        Records","catno":"SP 4634","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"}],"artists":[{"name":"Supertramp","anv":"","join":"","role":"","tracks":"","id":251517,"resource_url":"https://api.discogs.com/artists/251517"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Near Mint (NM or M-)"},{"field_id":2,"value":"Very
+        Good (VG)"}]},{"id":6275103,"instance_id":1455830692,"date_added":"2023-09-11T14:16:16-07:00","rating":0,"basic_information":{"id":6275103,"master_id":13280,"master_url":"https://api.discogs.com/masters/13280","resource_url":"https://api.discogs.com/releases/6275103","thumb":"https://i.discogs.com/TtRzgNLBwtNKIHp2DO-PazqTC0kHHvOhdCe-S-75bWI/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTYyNzUx/MDMtMTQxNTcxMTM3/MC0yOTU0LmpwZWc.jpeg","cover_image":"https://i.discogs.com/kfrPpmVa2W0mPCJ095aY-d4k1t1RVS40QGLvhe8uIZQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTYyNzUx/MDMtMTQxNTcxMTM3/MC0yOTU0LmpwZWc.jpeg","title":"Reckless","year":2014,"formats":[{"name":"Vinyl","qty":"2","descriptions":["LP","Album","Reissue"]},{"name":"Vinyl","qty":"1","descriptions":["LP"]}],"labels":[{"name":"A&M
+        Records","catno":"378 305-9","entity_type":"1","entity_type_name":"Label","id":904,"resource_url":"https://api.discogs.com/labels/904"},{"name":"UMe","catno":"006002537830596","entity_type":"1","entity_type_name":"Label","id":68029,"resource_url":"https://api.discogs.com/labels/68029"}],"artists":[{"name":"Bryan
+        Adams","anv":"","join":"","role":"","tracks":"","id":10933,"resource_url":"https://api.discogs.com/artists/10933"}],"genres":["Rock"],"styles":["Pop
+        Rock"]},"folder_id":1,"notes":[{"field_id":1,"value":"Mint (M)"},{"field_id":2,"value":"Mint
+        (M)"}]}]}'
+    headers:
+      CF-RAY:
+      - 9d64e5a77b90ab33-YYZ
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Mar 2026 01:34:08 GMT
+      Server:
+      - cloudflare
+      Set-Cookie:
+      - __cf_bm=yEyIn2oc2_o_elGQlOKTUvcbfVw4qQboSzOwsEOdPko-1772501648-1.0.1.1-PMizL0W2dHI6bvnqNSZFhgz1ox6mH3DMgP7rWdvKPKlqlMsvvETTWRK.TccRVR9QAQub7vlnr3Xg5Q5rQRdlyEzBUf5e2mYC1YuZ2LTbVV4;
+        path=/; expires=Tue, 03-Mar-26 02:04:08 GMT; domain=.discogs.com; HttpOnly;
+        Secure; SameSite=None
+      Transfer-Encoding:
+      - chunked
+      alt-svc:
+      - h3=":443"; ma=86400
+      cf-cache-status:
+      - DYNAMIC
+      strict-transport-security:
+      - max-age=15552000
+      vary:
+      - Accept-Encoding
+      x-discogs-ratelimit:
+      - '60'
+      x-discogs-ratelimit-remaining:
+      - '60'
+      x-discogs-ratelimit-used:
+      - '0'
+    status:
+      code: 200
+      message: OK
+version: 1

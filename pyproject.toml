@@ -74,3 +74,6 @@ ignore_missing_imports = true
 # ---------------------------------------------------------------------------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: live API tests requiring real credentials — always skipped in CI",
+]
