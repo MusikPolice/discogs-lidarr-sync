@@ -8,15 +8,67 @@ clear-cache  Delete the local MusicBrainz lookup cache.
 
 Usage
 -----
-    discogs-lidarr-sync sync [--dry-run] [--verbose]
-    discogs-lidarr-sync status
-    discogs-lidarr-sync clear-cache
+    discogs-lidarr-sync sync [--dry-run] [--config PATH] [--verbose]
+    discogs-lidarr-sync status [--config PATH]
+    discogs-lidarr-sync clear-cache [--config PATH]
 """
 
 from __future__ import annotations
 
-import click
+import sys
+from pathlib import Path
 
+import click
+from pyarr import LidarrAPI
+from rich.console import Console
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+
+from discogs_lidarr_sync.config import ConfigError, load_settings
+from discogs_lidarr_sync.discogs import fetch_collection
+from discogs_lidarr_sync.lidarr import get_all_album_mbids, get_all_artist_mbids
+from discogs_lidarr_sync.mbz import MbzCache, resolve
+from discogs_lidarr_sync.models import RunReport, SyncAction
+from discogs_lidarr_sync.sync import apply_diff, compute_diff, write_report, write_unresolved
+
+_console = Console()
+
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
+
+def _load_or_exit(config: str) -> object:
+    """Load settings and exit with a helpful message on failure."""
+    try:
+        return load_settings(env_file=config)
+    except ConfigError as exc:
+        _console.print(f"[red bold]Configuration error:[/red bold] {exc}")
+        sys.exit(1)
+
+
+def _print_summary(report: RunReport) -> None:
+    """Print a colour-coded summary table to the console."""
+    title = "Sync Summary" + (" [dim](dry run)[/dim]" if report.dry_run else "")
+    table = Table(title=title, show_header=True)
+    table.add_column("", style="bold", min_width=30)
+    table.add_column("Count", justify="right", min_width=6)
+
+    def _row(label: str, count: int, positive_style: str = "") -> None:
+        style = positive_style if count > 0 else ""
+        table.add_row(label, str(count), style=style)
+
+    _row("Artists added", report.artists_added, "green")
+    _row("Albums added", report.albums_added, "green")
+    _row("Skipped (already in Lidarr)", report.skipped_exists)
+    _row("Skipped (unresolvable MBZ ID)", report.skipped_unresolved, "yellow")
+    _row("Errors", report.errors, "red")
+    table.add_section()
+    table.add_row("Total vinyl records", str(report.total_vinyl))
+
+    _console.print()
+    _console.print(table)
+
+
+# ── Commands ───────────────────────────────────────────────────────────────────
 
 @click.group()
 def main() -> None:
@@ -30,20 +82,177 @@ def main() -> None:
     default=False,
     help="Show what would be added without making any changes.",
 )
-@click.option("--verbose", "-v", is_flag=True, default=False, help="Verbose output.")
-def sync(dry_run: bool, verbose: bool) -> None:
+@click.option(
+    "--config",
+    default=".env",
+    show_default=True,
+    help="Path to .env config file.",
+)
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Show each item processed.")
+def sync(dry_run: bool, config: str, verbose: bool) -> None:
     """Fetch the Discogs vinyl collection and sync new albums to Lidarr."""
-    raise NotImplementedError
+    settings = _load_or_exit(config)
+    from discogs_lidarr_sync.config import Settings  # narrow type after _load_or_exit
+    assert isinstance(settings, Settings)
+
+    client = LidarrAPI(settings.lidarr_url, settings.lidarr_api_key)
+    cache = MbzCache(settings.mbz_cache_path)
+    cache.load()
+
+    # ── Phase 1-3: Fetch data and resolve IDs ─────────────────────────────────
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        console=_console,
+    ) as progress:
+        # Fetch Discogs collection
+        t1 = progress.add_task("Fetching Discogs collection…", total=None)
+        try:
+            items = fetch_collection(settings.discogs_username, settings.discogs_token)
+        except Exception as exc:
+            _console.print(f"[red]Failed to fetch Discogs collection:[/red] {exc}")
+            sys.exit(1)
+        progress.update(
+            t1,
+            description=f"[green]✓[/green] Fetched {len(items)} vinyl records",
+            total=1,
+            completed=1,
+        )
+
+        # Read Lidarr state
+        t2 = progress.add_task("Reading Lidarr library…", total=None)
+        try:
+            artist_mbids = get_all_artist_mbids(client)
+            album_mbids = get_all_album_mbids(client)
+        except Exception as exc:
+            _console.print(f"[red]Failed to read Lidarr library:[/red] {exc}")
+            sys.exit(1)
+        progress.update(
+            t2,
+            description=(
+                f"[green]✓[/green] Lidarr: "
+                f"{len(artist_mbids)} artists, {len(album_mbids)} albums"
+            ),
+            total=1,
+            completed=1,
+        )
+
+        # Resolve MusicBrainz IDs (the slow step — 1 req/sec rate limit)
+        t3 = progress.add_task("Resolving MusicBrainz IDs…", total=len(items))
+        for item in items:
+            resolve(item, cache)
+            progress.advance(t3)
+        progress.update(t3, description="[green]✓[/green] MusicBrainz IDs resolved")
+
+    # ── Phase 4: Diff ─────────────────────────────────────────────────────────
+    to_add, to_skip = compute_diff(items, artist_mbids, album_mbids, cache)
+
+    if verbose:
+        for sr in to_skip:
+            _console.print(
+                f"  [dim]skip[/dim]  {sr.item.artist_name} — "
+                f"{sr.item.album_title}  ({sr.action})"
+            )
+
+    # ── Phase 5: Apply ────────────────────────────────────────────────────────
+    action_label = "Computing diff" if dry_run else "Syncing to Lidarr"
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=_console,
+        transient=True,
+    ) as p:
+        p.add_task(f"{action_label}…", total=None)
+        report = apply_diff(to_add, client, settings, dry_run=dry_run)
+
+    # apply_diff only sees to_add; fill in the complete picture.
+    report.total_vinyl = len(items)
+    report.skipped_exists = sum(
+        1 for sr in to_skip if sr.action == SyncAction.SKIPPED_EXISTS
+    )
+    report.skipped_unresolved = sum(
+        1 for sr in to_skip if sr.action == SyncAction.SKIPPED_UNRESOLVED
+    )
+
+    if verbose:
+        for sr in report.results:
+            _console.print(
+                f"  [green]{sr.action}[/green]  "
+                f"{sr.item.artist_name} — {sr.item.album_title}"
+            )
+
+    # ── Phase 6: Persist ──────────────────────────────────────────────────────
+    cache.save()
+    write_report(report, Path("runs"))
+    unresolved = [sr for sr in to_skip if sr.action == SyncAction.SKIPPED_UNRESOLVED]
+    if unresolved:
+        write_unresolved(unresolved, Path("unresolved.log"))
+
+    _print_summary(report)
 
 
 @main.command()
-def status() -> None:
+@click.option(
+    "--config",
+    default=".env",
+    show_default=True,
+    help="Path to .env config file.",
+)
+def status(config: str) -> None:
     """Show current Discogs collection size and Lidarr library size."""
-    raise NotImplementedError
+    settings = _load_or_exit(config)
+    from discogs_lidarr_sync.config import Settings
+    assert isinstance(settings, Settings)
+
+    client = LidarrAPI(settings.lidarr_url, settings.lidarr_api_key)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=_console,
+        transient=True,
+    ) as progress:
+        t1 = progress.add_task("Fetching Discogs collection…", total=None)
+        items = fetch_collection(settings.discogs_username, settings.discogs_token)
+        progress.update(t1, total=1, completed=1)
+
+        t2 = progress.add_task("Reading Lidarr library…", total=None)
+        artist_mbids = get_all_artist_mbids(client)
+        album_mbids = get_all_album_mbids(client)
+        progress.update(t2, total=1, completed=1)
+
+    table = Table(title="Current Status", show_header=True)
+    table.add_column("Source", style="bold", min_width=25)
+    table.add_column("Count", justify="right", min_width=6)
+    table.add_row("Discogs vinyl records", str(len(items)))
+    table.add_row("Lidarr artists", str(len(artist_mbids)))
+    table.add_row("Lidarr albums", str(len(album_mbids)))
+
+    _console.print()
+    _console.print(table)
 
 
 @main.command("clear-cache")
-@click.confirmation_option(prompt="This will delete the local MusicBrainz lookup cache. Continue?")
-def clear_cache() -> None:
+@click.option(
+    "--config",
+    default=".env",
+    show_default=True,
+    help="Path to .env config file.",
+)
+@click.confirmation_option(
+    prompt="This will delete the local MusicBrainz lookup cache. Continue?"
+)
+def clear_cache(config: str) -> None:
     """Delete the local MusicBrainz lookup cache."""
-    raise NotImplementedError
+    settings = _load_or_exit(config)
+    from discogs_lidarr_sync.config import Settings
+    assert isinstance(settings, Settings)
+
+    path = Path(settings.mbz_cache_path)
+    if path.exists():
+        path.unlink()
+        _console.print(f"[green]Deleted cache:[/green] {path}")
+    else:
+        _console.print(f"[yellow]Cache not found:[/yellow] {path}")
