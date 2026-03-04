@@ -42,7 +42,13 @@ def _artist_entry(mbid: str = _ARTIST_MBID) -> dict[str, object]:
 
 
 def _album_entry(mbid: str = _RG_MBID) -> dict[str, object]:
-    return {"id": 1, "title": "Greatest Hits", "foreignAlbumId": mbid, "artist": {}}
+    """Unmonitored album — mirrors what Lidarr auto-indexes on artist add."""
+    return {"id": 1, "title": "Greatest Hits", "foreignAlbumId": mbid, "artist": {}, "monitored": False}  # noqa: E501
+
+
+def _monitored_album_entry(mbid: str = _RG_MBID) -> dict[str, object]:
+    """Album already monitored in Lidarr."""
+    return {"id": 1, "title": "Greatest Hits", "foreignAlbumId": mbid, "artist": {}, "monitored": True}  # noqa: E501
 
 
 def _album_search_result(mbid: str = _RG_MBID) -> dict[str, object]:
@@ -240,14 +246,17 @@ class TestAddAlbum:
     def test_empty_lookup_raises_lidarr_error(self) -> None:
         client = _mock_client()
         client.lookup.return_value = []
+        client.get_album.return_value = []  # not in local library either
         with pytest.raises(LidarrError, match="No Lidarr lookup result"):
-            add_album(client, _RG_MBID, _ARTIST_MBID, _settings())
+            add_album(client, _RG_MBID, _ARTIST_MBID, _settings(), _poll_timeout=0.0)
 
     def test_lookup_exception_raises_lidarr_error(self) -> None:
+        """Persistent lookup exceptions are treated the same as empty results."""
         client = _mock_client()
         client.lookup.side_effect = RuntimeError("connection refused")
-        with pytest.raises(LidarrError, match="Lookup failed"):
-            add_album(client, _RG_MBID, _ARTIST_MBID, _settings())
+        client.get_album.return_value = []  # not in local library either
+        with pytest.raises(LidarrError, match="No Lidarr lookup result"):
+            add_album(client, _RG_MBID, _ARTIST_MBID, _settings(), _poll_timeout=0.0)
 
     def test_add_album_exception_raises_lidarr_error(self) -> None:
         client = _mock_client()
@@ -274,3 +283,98 @@ class TestAddAlbum:
         add_album(client, _RG_MBID, _ARTIST_MBID, _settings())
         call_args = client.add_album.call_args
         assert call_args[0][0] is wrapper["album"]
+
+
+class TestAddAlbumFallback:
+    """Tests for the local-library fallback paths in add_album().
+
+    When Lidarr auto-indexes an artist's discography as unmonitored entries
+    (triggered by AddArtistService), the search endpoint returns empty for
+    those albums.  add_album() must detect them via get_album() and flip
+    their monitored flag instead of treating the situation as an error.
+    """
+
+    def test_monitors_unmonitored_album_when_lookup_empty(self) -> None:
+        """Empty lookup + album in local DB → upd_album(monitored=True) called."""
+        client = _mock_client()
+        client.lookup.return_value = []
+        album = _album_entry()  # monitored=False
+        client.get_album.return_value = [album]
+        add_album(client, _RG_MBID, _ARTIST_MBID, _settings(), _poll_timeout=0.0)
+        client.upd_album.assert_called_once()
+        assert client.upd_album.call_args[0][0]["monitored"] is True
+
+    def test_skips_upd_album_if_already_monitored(self) -> None:
+        """Empty lookup + album already monitored → upd_album NOT called."""
+        client = _mock_client()
+        client.lookup.return_value = []
+        client.get_album.return_value = [_monitored_album_entry()]
+        add_album(client, _RG_MBID, _ARTIST_MBID, _settings(), _poll_timeout=0.0)
+        client.upd_album.assert_not_called()
+
+    def test_raises_when_lookup_empty_and_not_in_library(self) -> None:
+        """Empty lookup + album absent from local DB → LidarrError raised."""
+        client = _mock_client()
+        client.lookup.return_value = []
+        client.get_album.return_value = []
+        with pytest.raises(LidarrError, match="No Lidarr lookup result"):
+            add_album(client, _RG_MBID, _ARTIST_MBID, _settings(), _poll_timeout=0.0)
+
+    def test_monitors_album_on_album_exists_validator(self) -> None:
+        """AlbumExistsValidator on POST → find in local DB and set monitored=True."""
+        client = _mock_client()
+        client.lookup.return_value = [_album_search_result()]
+        client.add_album.side_effect = RuntimeError(
+            "Bad Request: AlbumExistsValidator: This album has already been added."
+        )
+        album = _album_entry()  # monitored=False
+        client.get_album.return_value = [album]
+        add_album(client, _RG_MBID, _ARTIST_MBID, _settings())
+        client.upd_album.assert_called_once()
+        assert client.upd_album.call_args[0][0]["monitored"] is True
+
+    def test_album_exists_validator_raises_if_not_in_library(self) -> None:
+        """AlbumExistsValidator but album not in local DB → LidarrError re-raised."""
+        client = _mock_client()
+        client.lookup.return_value = [_album_search_result()]
+        client.add_album.side_effect = RuntimeError(
+            "Bad Request: AlbumExistsValidator: This album has already been added."
+        )
+        client.get_album.return_value = []
+        with pytest.raises(LidarrError, match="Failed to add album"):
+            add_album(client, _RG_MBID, _ARTIST_MBID, _settings())
+
+    def test_lookup_retries_until_results_appear(self) -> None:
+        """Lookup returns empty twice then results — retries correctly."""
+        client = _mock_client()
+        client.lookup.side_effect = [[], [], [_album_search_result()]]
+        client.get_album.return_value = []  # not in local DB on first miss
+        with patch("time.sleep"):
+            add_album(client, _RG_MBID, _ARTIST_MBID, _settings())
+        assert client.lookup.call_count == 3
+        client.add_album.assert_called_once()
+
+    def test_poll_exits_early_when_album_found_in_library(self) -> None:
+        """First lookup miss + album in local DB → exits without sleeping."""
+        client = _mock_client()
+        client.lookup.return_value = []
+        album = _album_entry()  # monitored=False
+        client.get_album.return_value = [album]
+        with patch("time.sleep") as mock_sleep:
+            add_album(client, _RG_MBID, _ARTIST_MBID, _settings(), _poll_timeout=120.0)
+        # Should have returned as soon as the local-DB check confirmed the album,
+        # without sleeping at all.
+        mock_sleep.assert_not_called()
+        client.upd_album.assert_called_once()
+
+    def test_poll_timeout_then_library_found(self) -> None:
+        """Lookup times out but album appears in local DB by then → monitored."""
+        client = _mock_client()
+        # Lookup always empty; album not in local DB on first miss (still indexing)
+        # but present on the final check in add_album().
+        client.lookup.return_value = []
+        not_yet = []
+        present = [_album_entry()]
+        client.get_album.side_effect = [not_yet, present]
+        add_album(client, _RG_MBID, _ARTIST_MBID, _settings(), _poll_timeout=0.0)
+        client.upd_album.assert_called_once()

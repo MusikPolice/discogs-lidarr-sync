@@ -9,6 +9,18 @@ Add behaviour (matches decisions in PLAN.md §8):
     (albums are added explicitly; Lidarr won't auto-monitor discography)
   - Albums:  monitored=True, searchForNewAlbum=False
     (added to the wanted list; no immediate search triggered)
+
+When an artist is added to Lidarr with monitor="none", Lidarr's background
+RefreshArtistService immediately indexes the artist's entire discography as
+*unmonitored* album entries.  This has two knock-on effects for album adds:
+
+  1. lookup() returns empty for albums already in the local library — Lidarr's
+     search endpoint only surfaces albums not yet present locally.
+  2. add_album() POST returns AlbumExistsValidator — the album was indexed
+     between our lookup and our POST (race condition).
+
+In both cases the album is in Lidarr but unmonitored.  The fix is to detect
+these situations and call upd_album(monitored=True) instead of erroring.
 """
 
 from __future__ import annotations
@@ -38,12 +50,89 @@ def get_all_artist_mbids(client: LidarrAPI) -> set[str]:
 def get_all_album_mbids(client: LidarrAPI) -> set[str]:
     """Return the set of MusicBrainz Release Group UUIDs for all albums in Lidarr.
 
-    Includes both monitored and unmonitored albums — the sync engine never
-    modifies the monitoring state of albums that already exist.
+    Includes both monitored and unmonitored albums.
     """
     albums: list[dict[str, Any]] = client.get_album()
     return {a["foreignAlbumId"] for a in albums if a.get("foreignAlbumId")}
 
+
+# ── Album local-library helpers ───────────────────────────────────────────────
+
+def _find_album_in_library(client: LidarrAPI, mbid: str) -> dict[str, Any] | None:
+    """Return the Lidarr album record for *mbid* if it is in the local library.
+
+    Fetches the full album list and filters client-side.  Returns None if the
+    album is not present.
+    """
+    albums: list[dict[str, Any]] = client.get_album()
+    return next((a for a in albums if a.get("foreignAlbumId") == mbid), None)
+
+
+def _set_album_monitored(client: LidarrAPI, album: dict[str, Any]) -> None:
+    """Ensure *album* has monitored=True, calling upd_album() if needed.
+
+    Albums auto-indexed by Lidarr when an artist is added are unmonitored by
+    default (because the artist was added with monitor="none").  This function
+    flips them to monitored so they are queued for download.
+    """
+    if not album.get("monitored"):
+        album["monitored"] = True
+        client.upd_album(album)
+
+
+# ── Album lookup polling ──────────────────────────────────────────────────────
+
+def _poll_album_lookup(
+    client: LidarrAPI,
+    mbid: str,
+    *,
+    timeout: float = _POLL_TIMEOUT,
+    base_delay: float = _POLL_BASE_DELAY,
+) -> list[dict[str, Any]]:
+    """Poll Lidarr's search endpoint until the album appears, with backoff.
+
+    Lidarr's search index can lag briefly after a background artist refresh.
+    Retries with exponential backoff up to *timeout* seconds.
+
+    On the *first* cache miss the local library is checked immediately: if the
+    album is already indexed there (as an unmonitored entry added during artist
+    refresh), the search will *never* return it, so there is no point burning
+    the full timeout.  Returning early lets add_album() take the upd_album()
+    path without delay.
+
+    Returns:
+        Non-empty list if the album was found via search.
+        Empty list if the album could not be found via search (either it is
+        already in the local library or it is genuinely absent after *timeout*).
+    """
+    deadline = time.monotonic() + timeout
+    delay = base_delay
+    first_miss = True
+
+    while True:
+        try:
+            results: list[dict[str, Any]] = client.lookup(term=f"lidarr:{mbid}")
+            if results:
+                return results
+        except Exception:
+            pass  # Transient error — keep retrying
+
+        if first_miss:
+            first_miss = False
+            # If the album is already in the local library the search endpoint
+            # will never return it.  Bail out early instead of polling the full
+            # timeout period pointlessly.
+            if _find_album_in_library(client, mbid) is not None:
+                return []
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return []
+        time.sleep(min(delay, remaining))
+        delay = min(delay * 2, _POLL_MAX_DELAY)
+
+
+# ── Artist polling ────────────────────────────────────────────────────────────
 
 def _wait_for_artist_in_search(
     client: LidarrAPI,
@@ -86,6 +175,8 @@ def _wait_for_artist_in_search(
         f"to become available in Lidarr after {timeout:.0f}s"
     )
 
+
+# ── Public add helpers ────────────────────────────────────────────────────────
 
 def add_artist(
     client: LidarrAPI,
@@ -140,23 +231,41 @@ def add_album(
     mbid: str,
     artist_mbid: str,
     settings: Settings,
+    *,
+    _poll_timeout: float = _POLL_TIMEOUT,
 ) -> None:
     """Look up the album by MusicBrainz Release Group UUID and add it to Lidarr.
 
     The parent artist must already exist in Lidarr before calling this.
 
+    Handles albums that are already in Lidarr's local library as *unmonitored*
+    entries (auto-indexed by Lidarr when the artist was added with
+    monitor="none").  Two cases are detected and handled gracefully:
+
+      1. _poll_album_lookup() returns empty — Lidarr's search omits albums
+         already in the local library.  Falls back to get_album() to confirm
+         the album is present, then calls upd_album(monitored=True).
+      2. add_album() POST returns AlbumExistsValidator — race between our
+         lookup and our POST.  Same fallback: find and monitor the entry.
+
+    In both cases the album ends up monitored, which is the desired end state
+    (queued for download without triggering the full artist discography).
+
     Raises:
-        LidarrError: if the lookup returns no results or the POST fails.
+        LidarrError: if the album cannot be found via search or in the local
+            library, or if the POST fails for an unexpected reason.
     """
-    try:
-        results: list[dict[str, Any]] = client.lookup(term=f"lidarr:{mbid}")
-    except Exception as exc:
-        raise LidarrError(
-            f"Lookup failed for album MBID {mbid!r}: {exc}"
-        ) from exc
+    results = _poll_album_lookup(client, mbid, timeout=_poll_timeout)
 
     if not results:
-        raise LidarrError(f"No Lidarr lookup result for album MBID {mbid!r}")
+        # Search exhausted — check the local library as a final fallback.
+        # _poll_album_lookup already checked once on first miss; we check again
+        # here in case Lidarr finished indexing the album during the poll period.
+        album = _find_album_in_library(client, mbid)
+        if album is None:
+            raise LidarrError(f"No Lidarr lookup result for album MBID {mbid!r}")
+        _set_album_monitored(client, album)
+        return
 
     # Lidarr's search endpoint wraps results: {"foreignId": ..., "album": {...}, "id": ...}
     # pyarr's add_album expects the album object directly (with "artist" at the top level).
@@ -176,4 +285,11 @@ def add_album(
             search_for_new_album=False,
         )
     except Exception as exc:
+        if "AlbumExistsValidator" in str(exc) or "already been added" in str(exc):
+            # Race between lookup and POST: Lidarr indexed the album in its
+            # local DB between our search and our add.  Find and monitor it.
+            album = _find_album_in_library(client, mbid)
+            if album is not None:
+                _set_album_monitored(client, album)
+                return
         raise LidarrError(f"Failed to add album MBID {mbid!r}: {exc}") from exc
