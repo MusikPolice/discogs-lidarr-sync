@@ -13,11 +13,16 @@ Add behaviour (matches decisions in PLAN.md §8):
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from pyarr import LidarrAPI
 
 from discogs_lidarr_sync.config import Settings
+
+_POLL_TIMEOUT = 120.0   # seconds before giving up
+_POLL_BASE_DELAY = 1.0  # initial retry interval
+_POLL_MAX_DELAY = 16.0  # cap for exponential backoff
 
 
 class LidarrError(Exception):
@@ -40,16 +45,65 @@ def get_all_album_mbids(client: LidarrAPI) -> set[str]:
     return {a["foreignAlbumId"] for a in albums if a.get("foreignAlbumId")}
 
 
+def _wait_for_artist_in_search(
+    client: LidarrAPI,
+    mbid: str,
+    artist_name: str,
+    *,
+    timeout: float = _POLL_TIMEOUT,
+    base_delay: float = _POLL_BASE_DELAY,
+) -> None:
+    """Poll lookup_artist until the newly added artist appears with id > 0.
+
+    Lidarr stores the artist synchronously on POST but may need a moment
+    before it appears in search results with a valid internal id.  Album
+    search responses embed the artist object; if the artist is not yet
+    visible the 'artist' key is absent and pyarr raises KeyError.
+
+    Retries with exponential backoff up to *timeout* seconds.
+
+    Raises:
+        LidarrError: if the artist does not become available within *timeout*.
+    """
+    deadline = time.monotonic() + timeout
+    delay = base_delay
+    while True:
+        try:
+            results: list[dict[str, Any]] = client.lookup_artist(term=f"lidarr:{mbid}")
+            if results and results[0].get("id", 0) > 0:
+                return
+        except Exception:
+            pass  # Transient error — keep trying
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(delay, remaining))
+        delay = min(delay * 2, _POLL_MAX_DELAY)
+
+    raise LidarrError(
+        f"Timed out waiting for artist {artist_name!r} (MBID {mbid!r}) "
+        f"to become available in Lidarr after {timeout:.0f}s"
+    )
+
+
 def add_artist(
     client: LidarrAPI,
     mbid: str,
     artist_name: str,
     settings: Settings,
+    *,
+    _poll_timeout: float = _POLL_TIMEOUT,
 ) -> None:
     """Look up the artist by MusicBrainz UUID and add them to Lidarr.
 
+    After a successful POST, polls until the artist is visible in Lidarr's
+    search results (id > 0), ensuring that subsequent album lookups can
+    embed the artist object correctly.
+
     Raises:
-        LidarrError: if the lookup returns no results or the POST fails.
+        LidarrError: if the lookup returns no results, the POST fails, or
+            the artist does not become available within the poll timeout.
     """
     try:
         results: list[dict[str, Any]] = client.lookup_artist(term=f"lidarr:{mbid}")
@@ -78,6 +132,8 @@ def add_artist(
             f"Failed to add artist MBID {mbid!r} ({artist_name!r}): {exc}"
         ) from exc
 
+    _wait_for_artist_in_search(client, mbid, artist_name, timeout=_poll_timeout)
+
 
 def add_album(
     client: LidarrAPI,
@@ -102,9 +158,14 @@ def add_album(
     if not results:
         raise LidarrError(f"No Lidarr lookup result for album MBID {mbid!r}")
 
+    # Lidarr's search endpoint wraps results: {"foreignId": ..., "album": {...}, "id": ...}
+    # pyarr's add_album expects the album object directly (with "artist" at the top level).
+    result = results[0]
+    album_data: dict[str, Any] = result.get("album", result)
+
     try:
         client.add_album(
-            results[0],
+            album_data,
             root_dir=settings.lidarr_root_folder,
             quality_profile_id=settings.lidarr_quality_profile_id,
             metadata_profile_id=settings.lidarr_metadata_profile_id,

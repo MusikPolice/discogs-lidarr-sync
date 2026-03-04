@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -42,7 +42,12 @@ def _artist_entry(mbid: str = _ARTIST_MBID) -> dict[str, object]:
 
 
 def _album_entry(mbid: str = _RG_MBID) -> dict[str, object]:
-    return {"id": 1, "title": "Greatest Hits", "foreignAlbumId": mbid}
+    return {"id": 1, "title": "Greatest Hits", "foreignAlbumId": mbid, "artist": {}}
+
+
+def _album_search_result(mbid: str = _RG_MBID) -> dict[str, object]:
+    """Mirrors the real Lidarr /api/v1/search response shape for an album lookup."""
+    return {"foreignId": mbid, "album": _album_entry(mbid), "id": 1}
 
 
 # ── get_all_artist_mbids ───────────────────────────────────────────────────────
@@ -113,9 +118,10 @@ class TestGetAllAlbumMbids:
 class TestAddArtist:
     def test_calls_lookup_with_lidarr_prefix(self) -> None:
         client = _mock_client()
-        client.lookup_artist.return_value = [_artist_entry()]
+        client.lookup_artist.return_value = [_artist_entry()]  # id=1 → poll exits immediately
         add_artist(client, _ARTIST_MBID, "The Police", _settings())
-        client.lookup_artist.assert_called_once_with(term=f"lidarr:{_ARTIST_MBID}")
+        # Called for both the initial lookup and at least one readiness poll.
+        client.lookup_artist.assert_any_call(term=f"lidarr:{_ARTIST_MBID}")
 
     def test_calls_add_artist_with_correct_params(self) -> None:
         client = _mock_client()
@@ -161,6 +167,47 @@ class TestAddArtist:
         add_artist(client, _ARTIST_MBID, "The Police", _settings())
         call_args = client.add_artist.call_args
         assert call_args[0][0] is first
+
+
+class TestAddArtistPolling:
+    """Tests for the readiness-poll that runs after a successful add_artist POST."""
+
+    def test_polls_lookup_artist_after_add(self) -> None:
+        """lookup_artist is called at least twice: once for lookup, once for poll."""
+        client = _mock_client()
+        client.lookup_artist.return_value = [_artist_entry()]  # id=1 → ready immediately
+        add_artist(client, _ARTIST_MBID, "The Police", _settings())
+        assert client.lookup_artist.call_count >= 2
+
+    def test_retries_poll_until_artist_ready(self) -> None:
+        """Polling retries when the artist has id=0, then succeeds when id>0."""
+        client = _mock_client()
+        not_ready = {"artistName": "The Police", "foreignArtistId": _ARTIST_MBID, "id": 0}
+        ready = _artist_entry()  # id=1
+        # lookup: initial (ready), poll attempt 1 (not ready), poll attempt 2 (ready)
+        client.lookup_artist.side_effect = [[ready], [not_ready], [ready]]
+        with patch("time.sleep"):
+            add_artist(client, _ARTIST_MBID, "The Police", _settings())
+        assert client.lookup_artist.call_count == 3
+
+    def test_poll_timeout_raises_lidarr_error(self) -> None:
+        """Raises LidarrError when artist never becomes available within timeout."""
+        client = _mock_client()
+        not_ready = {"artistName": "The Police", "foreignArtistId": _ARTIST_MBID, "id": 0}
+        client.lookup_artist.return_value = [not_ready]
+        with pytest.raises(LidarrError, match="Timed out"):
+            # _poll_timeout=0.0: after the first failed attempt remaining≤0 → immediate raise
+            add_artist(client, _ARTIST_MBID, "The Police", _settings(), _poll_timeout=0.0)
+
+    def test_poll_handles_transient_lookup_exception(self) -> None:
+        """A transient exception during polling is swallowed and retried."""
+        client = _mock_client()
+        ready = _artist_entry()
+        # initial lookup succeeds; poll raises once, then succeeds
+        client.lookup_artist.side_effect = [[ready], RuntimeError("transient"), [ready]]
+        with patch("time.sleep"):
+            add_artist(client, _ARTIST_MBID, "The Police", _settings())
+        assert client.lookup_artist.call_count == 3
 
 
 # ── add_album ──────────────────────────────────────────────────────────────────
@@ -218,3 +265,12 @@ class TestAddAlbum:
         add_album(client, _RG_MBID, _ARTIST_MBID, _settings())
         call_args = client.add_album.call_args
         assert call_args[0][0] is first
+
+    def test_unwraps_album_from_search_result_wrapper(self) -> None:
+        """When lookup() returns the real Lidarr wrapper shape, the inner album is extracted."""
+        client = _mock_client()
+        wrapper = _album_search_result()
+        client.lookup.return_value = [wrapper]
+        add_album(client, _RG_MBID, _ARTIST_MBID, _settings())
+        call_args = client.add_album.call_args
+        assert call_args[0][0] is wrapper["album"]

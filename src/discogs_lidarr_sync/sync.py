@@ -70,8 +70,9 @@ def apply_diff(
 ) -> RunReport:
     """Add artists and albums to Lidarr.
 
-    Artists are processed before albums to satisfy the dependency constraint
-    (an album cannot be added before its artist exists in Lidarr).
+    Uses a two-pass approach: all missing artists are added first (each call to
+    add_artist blocks until the artist is confirmed visible in Lidarr's search),
+    then albums are added in a second pass.
 
     In dry_run mode actions are logged but no API calls are made.
     Per-item errors are caught and recorded without aborting the run.
@@ -91,33 +92,43 @@ def apply_diff(
             results=list(to_add),
         )
 
-    # Fetch current artist state once; update locally as we add artists so
-    # subsequent albums by the same artist don't trigger a second add_artist.
     existing_artist_mbids = get_all_artist_mbids(lidarr_client)
 
     artists_added = 0
     albums_added = 0
     errors = 0
+    failed_artist_mbids: dict[str, str] = {}  # mbid → error message
 
+    # ── Pass 1: Add all missing artists ──────────────────────────────────────
+    for sr in to_add:
+        assert sr.mbz_ids is not None
+        artist_mbid = sr.mbz_ids.artist_mbid
+        if (
+            not artist_mbid
+            or artist_mbid in existing_artist_mbids
+            or artist_mbid in failed_artist_mbids
+        ):
+            continue
+        try:
+            add_artist(lidarr_client, artist_mbid, sr.item.artist_name, settings)
+            existing_artist_mbids.add(artist_mbid)
+            artists_added += 1
+        except LidarrError as exc:
+            failed_artist_mbids[artist_mbid] = str(exc)
+
+    # ── Pass 2: Add all albums ────────────────────────────────────────────────
     for sr in to_add:
         assert sr.mbz_ids is not None
         artist_mbid = sr.mbz_ids.artist_mbid
         release_group_mbid = sr.mbz_ids.release_group_mbid
         assert release_group_mbid is not None  # compute_diff guarantees this
 
-        # 1. Add artist if not already in Lidarr.
-        if artist_mbid and artist_mbid not in existing_artist_mbids:
-            try:
-                add_artist(lidarr_client, artist_mbid, sr.item.artist_name, settings)
-                existing_artist_mbids.add(artist_mbid)
-                artists_added += 1
-            except LidarrError as exc:
-                sr.action = SyncAction.ERROR
-                sr.error = str(exc)
-                errors += 1
-                continue  # Can't add album without the artist.
+        if artist_mbid and artist_mbid in failed_artist_mbids:
+            sr.action = SyncAction.ERROR
+            sr.error = failed_artist_mbids[artist_mbid]
+            errors += 1
+            continue
 
-        # 2. Add the album.
         try:
             add_album(lidarr_client, release_group_mbid, artist_mbid or "", settings)
             albums_added += 1
