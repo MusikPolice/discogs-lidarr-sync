@@ -11,13 +11,16 @@ Orchestrates the full sync pipeline:
 
 from __future__ import annotations
 
+import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pyarr import LidarrAPI
 
 from discogs_lidarr_sync.config import Settings
-from discogs_lidarr_sync.mbz import MbzCache
-from discogs_lidarr_sync.models import DiscogsItem, RunReport, SyncResult
+from discogs_lidarr_sync.lidarr import LidarrError, add_album, add_artist, get_all_artist_mbids
+from discogs_lidarr_sync.mbz import MbzCache, resolve
+from discogs_lidarr_sync.models import DiscogsItem, RunReport, SyncAction, SyncResult
 
 
 def compute_diff(
@@ -36,7 +39,27 @@ def compute_diff(
         - to_add:  items with resolved MBIDs not yet present in Lidarr.
         - to_skip: items already in Lidarr, or whose MBIDs could not be resolved.
     """
-    raise NotImplementedError
+    to_add: list[SyncResult] = []
+    to_skip: list[SyncResult] = []
+
+    for item in discogs_items:
+        mbz = resolve(item, cache)
+
+        if not mbz.release_group_mbid:
+            # No Release Group MBID — can't add to Lidarr.
+            to_skip.append(
+                SyncResult(item=item, mbz_ids=mbz, action=SyncAction.SKIPPED_UNRESOLVED)
+            )
+        elif mbz.release_group_mbid in album_mbids:
+            to_skip.append(
+                SyncResult(item=item, mbz_ids=mbz, action=SyncAction.SKIPPED_EXISTS)
+            )
+        else:
+            to_add.append(
+                SyncResult(item=item, mbz_ids=mbz, action=SyncAction.ADDED_ALBUM)
+            )
+
+    return to_add, to_skip
 
 
 def apply_diff(
@@ -53,14 +76,113 @@ def apply_diff(
     In dry_run mode actions are logged but no API calls are made.
     Per-item errors are caught and recorded without aborting the run.
     """
-    raise NotImplementedError
+    if dry_run:
+        for sr in to_add:
+            sr.action = SyncAction.SKIPPED_DRY_RUN
+        return RunReport(
+            run_at=datetime.now(UTC),
+            dry_run=True,
+            total_vinyl=len(to_add),
+            artists_added=0,
+            albums_added=0,
+            skipped_exists=0,
+            skipped_unresolved=0,
+            errors=0,
+            results=list(to_add),
+        )
+
+    # Fetch current artist state once; update locally as we add artists so
+    # subsequent albums by the same artist don't trigger a second add_artist.
+    existing_artist_mbids = get_all_artist_mbids(lidarr_client)
+
+    artists_added = 0
+    albums_added = 0
+    errors = 0
+
+    for sr in to_add:
+        assert sr.mbz_ids is not None
+        artist_mbid = sr.mbz_ids.artist_mbid
+        release_group_mbid = sr.mbz_ids.release_group_mbid
+        assert release_group_mbid is not None  # compute_diff guarantees this
+
+        # 1. Add artist if not already in Lidarr.
+        if artist_mbid and artist_mbid not in existing_artist_mbids:
+            try:
+                add_artist(lidarr_client, artist_mbid, sr.item.artist_name, settings)
+                existing_artist_mbids.add(artist_mbid)
+                artists_added += 1
+            except LidarrError as exc:
+                sr.action = SyncAction.ERROR
+                sr.error = str(exc)
+                errors += 1
+                continue  # Can't add album without the artist.
+
+        # 2. Add the album.
+        try:
+            add_album(lidarr_client, release_group_mbid, artist_mbid or "", settings)
+            albums_added += 1
+            sr.action = SyncAction.ADDED_ALBUM
+        except LidarrError as exc:
+            sr.action = SyncAction.ERROR
+            sr.error = str(exc)
+            errors += 1
+
+    return RunReport(
+        run_at=datetime.now(UTC),
+        dry_run=False,
+        total_vinyl=len(to_add),
+        artists_added=artists_added,
+        albums_added=albums_added,
+        skipped_exists=0,
+        skipped_unresolved=0,
+        errors=errors,
+        results=list(to_add),
+    )
 
 
 def write_report(report: RunReport, output_dir: Path) -> None:
     """Write a timestamped JSON report of the sync run to *output_dir*."""
-    raise NotImplementedError
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"sync_{report.run_at.strftime('%Y%m%dT%H%M%SZ')}.json"
+    data = {
+        "run_at": report.run_at.isoformat(),
+        "dry_run": report.dry_run,
+        "total_vinyl": report.total_vinyl,
+        "artists_added": report.artists_added,
+        "albums_added": report.albums_added,
+        "skipped_exists": report.skipped_exists,
+        "skipped_unresolved": report.skipped_unresolved,
+        "errors": report.errors,
+        "results": [
+            {
+                "discogs_release_id": r.item.discogs_release_id,
+                "artist": r.item.artist_name,
+                "album": r.item.album_title,
+                "action": r.action,
+                "error": r.error,
+                "artist_mbid": r.mbz_ids.artist_mbid if r.mbz_ids else None,
+                "release_group_mbid": r.mbz_ids.release_group_mbid if r.mbz_ids else None,
+            }
+            for r in report.results
+        ],
+    }
+    with open(output_dir / filename, "w") as f:
+        json.dump(data, f, indent=2)
 
 
 def write_unresolved(unresolved: list[SyncResult], path: Path) -> None:
     """Append items with no MusicBrainz match to *path* (unresolved.log)."""
-    raise NotImplementedError
+    if not unresolved:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a") as f:
+        for sr in unresolved:
+            parts = [
+                str(sr.item.discogs_release_id),
+                sr.item.artist_name,
+                sr.item.album_title,
+                str(sr.action),
+            ]
+            if sr.error:
+                parts.append(sr.error)
+            f.write("\t".join(parts) + "\n")
