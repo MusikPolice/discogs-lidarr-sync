@@ -56,6 +56,42 @@ def get_all_album_mbids(client: LidarrAPI) -> set[str]:
     return {a["foreignAlbumId"] for a in albums if a.get("foreignAlbumId")}
 
 
+def get_discogs_album_coverage(
+    client: LidarrAPI,
+    release_group_mbids: set[str],
+) -> tuple[int, int, int]:
+    """Return (monitored, on_disk, wanted) counts for a set of Discogs album MBIDs.
+
+    Cross-references the caller's Discogs release-group MBIDs against the
+    current Lidarr library to answer three questions:
+      - monitored: how many are monitored in Lidarr
+      - on_disk:   of those, how many have at least one file downloaded
+                   (statistics.trackFileCount > 0)
+      - wanted:    of those, how many have no files yet (queued for download)
+
+    Intended to be called once after apply_diff() to produce the final
+    coverage snapshot shown in the sync summary.
+    """
+    albums: list[dict[str, Any]] = client.get_album()
+    by_mbid = {a["foreignAlbumId"]: a for a in albums if a.get("foreignAlbumId")}
+
+    monitored = 0
+    on_disk = 0
+    wanted = 0
+    for mbid in release_group_mbids:
+        album = by_mbid.get(mbid)
+        if album is None or not album.get("monitored"):
+            continue
+        monitored += 1
+        track_file_count = (album.get("statistics") or {}).get("trackFileCount", 0)
+        if track_file_count > 0:
+            on_disk += 1
+        else:
+            wanted += 1
+
+    return monitored, on_disk, wanted
+
+
 # ── Album local-library helpers ───────────────────────────────────────────────
 
 def _find_album_in_library(client: LidarrAPI, mbid: str) -> dict[str, Any] | None:

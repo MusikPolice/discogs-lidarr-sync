@@ -28,7 +28,11 @@ from rich.table import Table
 
 from discogs_lidarr_sync.config import ConfigError, load_lidarr_settings, load_settings
 from discogs_lidarr_sync.discogs import fetch_collection
-from discogs_lidarr_sync.lidarr import get_all_album_mbids, get_all_artist_mbids
+from discogs_lidarr_sync.lidarr import (
+    get_all_album_mbids,
+    get_all_artist_mbids,
+    get_discogs_album_coverage,
+)
 from discogs_lidarr_sync.mbz import MbzCache, resolve
 from discogs_lidarr_sync.models import RunReport, SyncAction
 from discogs_lidarr_sync.sync import apply_diff, compute_diff, write_report, write_unresolved
@@ -65,6 +69,12 @@ def _print_summary(report: RunReport) -> None:
     _row("Errors", report.errors, "red")
     table.add_section()
     table.add_row("Total vinyl records", str(report.total_vinyl))
+    table.add_section()
+    monitored_str = f"{report.coverage_monitored}/{report.total_vinyl}"
+    mon_style = "green" if report.coverage_monitored == report.total_vinyl else "yellow"
+    table.add_row("Monitored in Lidarr", monitored_str, style=mon_style)
+    table.add_row("  On disk", str(report.coverage_on_disk))
+    table.add_row("  Wanted", str(report.coverage_wanted))
 
     _console.print()
     _console.print(table)
@@ -177,6 +187,17 @@ def sync(dry_run: bool, config: str, verbose: bool) -> None:
     report.skipped_unresolved = sum(
         1 for sr in to_skip if sr.action == SyncAction.SKIPPED_UNRESOLVED
     )
+
+    # Post-sync coverage: how many Discogs albums are monitored/on-disk/wanted.
+    all_resolved_mbids: set[str] = {
+        sr.mbz_ids.release_group_mbid
+        for sr in to_add + to_skip
+        if sr.mbz_ids and sr.mbz_ids.release_group_mbid
+    }
+    monitored, on_disk, wanted = get_discogs_album_coverage(client, all_resolved_mbids)
+    report.coverage_monitored = monitored
+    report.coverage_on_disk = on_disk
+    report.coverage_wanted = wanted
 
     if verbose:
         for sr in report.results:

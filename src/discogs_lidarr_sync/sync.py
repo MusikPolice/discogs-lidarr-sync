@@ -164,6 +164,9 @@ def write_report(report: RunReport, output_dir: Path) -> None:
         "skipped_exists": report.skipped_exists,
         "skipped_unresolved": report.skipped_unresolved,
         "errors": report.errors,
+        "coverage_monitored": report.coverage_monitored,
+        "coverage_on_disk": report.coverage_on_disk,
+        "coverage_wanted": report.coverage_wanted,
         "results": [
             {
                 "discogs_release_id": r.item.discogs_release_id,

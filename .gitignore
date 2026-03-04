@@ -6,6 +6,7 @@
 !.cache/.gitkeep
 runs/*
 !runs/.gitkeep
+out/*
 
 # Python
 __pycache__/
@@ -25,3 +26,4 @@ build/
 .idea/
 .vscode/
 *.iml
+.claude/*

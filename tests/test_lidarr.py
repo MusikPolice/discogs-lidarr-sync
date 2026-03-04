@@ -13,6 +13,7 @@ from discogs_lidarr_sync.lidarr import (
     add_artist,
     get_all_album_mbids,
     get_all_artist_mbids,
+    get_discogs_album_coverage,
 )
 
 # ── Test data helpers ──────────────────────────────────────────────────────────
@@ -54,6 +55,61 @@ def _monitored_album_entry(mbid: str = _RG_MBID) -> dict[str, object]:
 def _album_search_result(mbid: str = _RG_MBID) -> dict[str, object]:
     """Mirrors the real Lidarr /api/v1/search response shape for an album lookup."""
     return {"foreignId": mbid, "album": _album_entry(mbid), "id": 1}
+
+
+# ── get_discogs_album_coverage ────────────────────────────────────────────────
+
+class TestGetDiscogsAlbumCoverage:
+    def _lib(self, monitored: bool, track_file_count: int, mbid: str = _RG_MBID) -> dict:
+        return {
+            "foreignAlbumId": mbid,
+            "monitored": monitored,
+            "statistics": {"trackFileCount": track_file_count},
+        }
+
+    def test_counts_monitored_on_disk_and_wanted(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            self._lib(True, 10, "aaa"),   # monitored, on disk
+            self._lib(True, 0, "bbb"),    # monitored, wanted
+            self._lib(False, 5, "ccc"),   # unmonitored — excluded
+        ]
+        monitored, on_disk, wanted = get_discogs_album_coverage(
+            client, {"aaa", "bbb", "ccc"}
+        )
+        assert monitored == 2
+        assert on_disk == 1
+        assert wanted == 1
+
+    def test_mbid_not_in_library_excluded(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = []
+        monitored, on_disk, wanted = get_discogs_album_coverage(client, {_RG_MBID})
+        assert monitored == 0
+        assert on_disk == 0
+        assert wanted == 0
+
+    def test_missing_statistics_treated_as_wanted(self) -> None:
+        """Albums with no statistics field count as wanted (no files yet)."""
+        client = _mock_client()
+        client.get_album.return_value = [
+            {"foreignAlbumId": _RG_MBID, "monitored": True},  # no statistics key
+        ]
+        monitored, on_disk, wanted = get_discogs_album_coverage(client, {_RG_MBID})
+        assert monitored == 1
+        assert on_disk == 0
+        assert wanted == 1
+
+    def test_ignores_mbids_not_in_requested_set(self) -> None:
+        """Albums in Lidarr but not in the caller's Discogs set are excluded."""
+        client = _mock_client()
+        client.get_album.return_value = [
+            self._lib(True, 5, "in-discogs"),
+            self._lib(True, 5, "not-in-discogs"),
+        ]
+        monitored, on_disk, wanted = get_discogs_album_coverage(client, {"in-discogs"})
+        assert monitored == 1
+        assert on_disk == 1
 
 
 # ── get_all_artist_mbids ───────────────────────────────────────────────────────
