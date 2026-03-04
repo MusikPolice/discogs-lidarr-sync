@@ -4,12 +4,14 @@ Commands
 --------
 sync         Fetch the Discogs vinyl collection and sync new albums to Lidarr.
 status       Show collection / library sizes without making any changes.
+profiles     List Lidarr quality and metadata profiles with their IDs.
 clear-cache  Delete the local MusicBrainz lookup cache.
 
 Usage
 -----
     discogs-lidarr-sync sync [--dry-run] [--config PATH] [--verbose]
     discogs-lidarr-sync status [--config PATH]
+    discogs-lidarr-sync profiles [--config PATH]
     discogs-lidarr-sync clear-cache [--config PATH]
 """
 
@@ -24,7 +26,7 @@ from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from discogs_lidarr_sync.config import ConfigError, load_settings
+from discogs_lidarr_sync.config import ConfigError, load_lidarr_settings, load_settings
 from discogs_lidarr_sync.discogs import fetch_collection
 from discogs_lidarr_sync.lidarr import get_all_album_mbids, get_all_artist_mbids
 from discogs_lidarr_sync.mbz import MbzCache, resolve
@@ -232,6 +234,58 @@ def status(config: str) -> None:
 
     _console.print()
     _console.print(table)
+
+
+@main.command()
+@click.option(
+    "--config",
+    default=".env",
+    show_default=True,
+    help="Path to .env config file.",
+)
+def profiles(config: str) -> None:
+    """List Lidarr quality and metadata profiles with their IDs.
+
+    Only LIDARR_URL and LIDARR_API_KEY need to be set to run this command.
+    Use the displayed IDs to set LIDARR_QUALITY_PROFILE_ID and
+    LIDARR_METADATA_PROFILE_ID in your .env file.
+    """
+    try:
+        ls = load_lidarr_settings(env_file=config)
+    except ConfigError as exc:
+        _console.print(f"[red bold]Configuration error:[/red bold] {exc}")
+        sys.exit(1)
+
+    client = LidarrAPI(ls.lidarr_url, ls.lidarr_api_key)
+
+    try:
+        quality_profiles = client.get_quality_profile()
+        metadata_profiles = client.get_metadata_profile()
+    except Exception as exc:
+        _console.print(f"[red]Failed to fetch profiles from Lidarr:[/red] {exc}")
+        sys.exit(1)
+
+    q_table = Table(title="Quality Profiles", show_header=True)
+    q_table.add_column("ID", justify="right", style="bold cyan", min_width=4)
+    q_table.add_column("Name", min_width=20)
+    for p in quality_profiles:
+        q_table.add_row(str(p["id"]), p["name"])
+
+    m_table = Table(title="Metadata Profiles", show_header=True)
+    m_table.add_column("ID", justify="right", style="bold cyan", min_width=4)
+    m_table.add_column("Name", min_width=20)
+    for p in metadata_profiles:
+        m_table.add_row(str(p["id"]), p["name"])
+
+    _console.print()
+    _console.print(q_table)
+    _console.print()
+    _console.print(m_table)
+    _console.print()
+    _console.print(
+        "Set [bold]LIDARR_QUALITY_PROFILE_ID[/bold] and "
+        "[bold]LIDARR_METADATA_PROFILE_ID[/bold] in your .env using the IDs above."
+    )
 
 
 @main.command("clear-cache")

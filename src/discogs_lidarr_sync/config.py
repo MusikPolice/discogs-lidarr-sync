@@ -27,17 +27,58 @@ class ConfigError(Exception):
 
 
 @dataclass
-class Settings:
+class LidarrSettings:
+    """Minimal settings needed to connect to Lidarr (no Discogs or add-options required).
+
+    Used by commands (e.g. ``profiles``) that only need to talk to Lidarr.
+    """
+
+    lidarr_url: str
+    lidarr_api_key: str
+
+
+@dataclass
+class Settings(LidarrSettings):
     """All configuration values needed for a sync run."""
 
     discogs_token: str
     discogs_username: str
-    lidarr_url: str
-    lidarr_api_key: str
     lidarr_root_folder: str
     lidarr_quality_profile_id: int
     lidarr_metadata_profile_id: int
     mbz_cache_path: str = ".cache/mbz_cache.json"
+
+
+def load_lidarr_settings(env_file: str = ".env") -> LidarrSettings:
+    """Load only the Lidarr connection settings from environment variables / .env file.
+
+    Only LIDARR_URL and LIDARR_API_KEY are required.  Intended for commands
+    (e.g. ``profiles``) that don't need Discogs credentials or add-options.
+
+    Raises:
+        ConfigError: if LIDARR_URL or LIDARR_API_KEY is missing/empty.
+    """
+    load_dotenv(env_file)
+
+    missing: list[str] = []
+
+    def _require(key: str) -> str:
+        val = os.getenv(key, "").strip()
+        if not val:
+            missing.append(key)
+        return val
+
+    lidarr_url = _require("LIDARR_URL")
+    lidarr_api_key = _require("LIDARR_API_KEY")
+
+    if missing:
+        names = ", ".join(missing)
+        raise ConfigError(
+            f"Missing required environment variable(s): {names}\n"
+            f"Copy .env.example to .env and fill in the missing values."
+        )
+
+    return LidarrSettings(lidarr_url=lidarr_url, lidarr_api_key=lidarr_api_key)
 
 
 def load_settings(env_file: str = ".env") -> Settings:

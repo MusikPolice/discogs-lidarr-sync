@@ -49,8 +49,8 @@ cp .env.example .env
 | `LIDARR_URL` | Base URL of your Lidarr instance, e.g. `http://192.168.1.10:8686` |
 | `LIDARR_API_KEY` | Found at **Lidarr → Settings → General → Security → API Key** |
 | `LIDARR_ROOT_FOLDER` | Root folder path configured in Lidarr, e.g. `/music` |
-| `LIDARR_QUALITY_PROFILE_ID` | Integer ID of the quality profile to use (see **Settings → Quality Profiles**) |
-| `LIDARR_METADATA_PROFILE_ID` | Integer ID of the metadata profile to use (see **Settings → Metadata Profiles**) |
+| `LIDARR_QUALITY_PROFILE_ID` | Integer ID of the quality profile to use — run `discogs-lidarr-sync profiles` to list them |
+| `LIDARR_METADATA_PROFILE_ID` | Integer ID of the metadata profile to use — run `discogs-lidarr-sync profiles` to list them |
 | `MBZ_CACHE_PATH` | *(optional)* Path to the MBZ lookup cache. Default: `.cache/mbz_cache.json` |
 
 ---
@@ -80,6 +80,14 @@ uv run discogs-lidarr-sync status
 ```
 
 Fetches and displays the current Discogs vinyl count and Lidarr artist/album counts. No changes are made.
+
+### `profiles` — find quality and metadata profile IDs
+
+```bash
+uv run discogs-lidarr-sync profiles
+```
+
+Prints a table of all quality profiles and metadata profiles configured in your Lidarr instance, with their numeric IDs. Only `LIDARR_URL` and `LIDARR_API_KEY` need to be set — run this command before filling in the profile ID variables in `.env`.
 
 ### `clear-cache` — delete the MBZ cache
 
