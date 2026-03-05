@@ -15,7 +15,7 @@ from discogs_lidarr_sync.models import DiscogsItem, MbzIds
 # ── Test data helpers ─────────────────────────────────────────────────────────
 
 _ARTIST_MBID = "9e0e2b01-41db-4008-bd8b-988977d6019a"  # The Police
-_RG_MBID = "f5093c06-23e3-404f-aeaa-40f72885ee3a"       # Dark Side of the Moon
+_RG_MBID = "f5093c06-23e3-404f-aeaa-40f72885ee3a"  # Dark Side of the Moon
 _RELEASE_MBID = "b84ee12a-09ef-421b-82de-0441a926375b"
 
 
@@ -84,6 +84,7 @@ def _now() -> datetime:
 
 
 # ── MbzCache ──────────────────────────────────────────────────────────────────
+
 
 class TestMbzCache:
     def test_get_miss_returns_none(self) -> None:
@@ -175,6 +176,7 @@ class TestMbzCache:
 
 # ── resolve_artist ────────────────────────────────────────────────────────────
 
+
 class TestResolveArtist:
     def test_url_relation_match(self) -> None:
         with patch.object(musicbrainzngs, "browse_urls", return_value=_artist_url_response()):
@@ -185,8 +187,9 @@ class TestResolveArtist:
         name_result = {"artist-list": [{"id": _ARTIST_MBID, "name": "The Police"}]}
         with (
             patch.object(
-                musicbrainzngs, "browse_urls",
-                side_effect=musicbrainzngs.ResponseError(cause=Exception("404"))
+                musicbrainzngs,
+                "browse_urls",
+                side_effect=musicbrainzngs.ResponseError(cause=Exception("404")),
             ),
             patch.object(musicbrainzngs, "search_artists", return_value=name_result),
         ):
@@ -206,11 +209,7 @@ class TestResolveArtist:
     def test_non_discogs_relation_type_ignored(self) -> None:
         """Relations with type != 'discogs' must not be returned."""
         url_resp: dict[str, object] = {
-            "url": {
-                "artist-relation-list": [
-                    {"type": "other", "artist": {"id": "wrong-id"}}
-                ]
-            }
+            "url": {"artist-relation-list": [{"type": "other", "artist": {"id": "wrong-id"}}]}
         }
         name_result = {"artist-list": [{"id": _ARTIST_MBID}]}
         with (
@@ -223,8 +222,9 @@ class TestResolveArtist:
     def test_both_methods_fail_returns_none(self) -> None:
         with (
             patch.object(
-                musicbrainzngs, "browse_urls",
-                side_effect=musicbrainzngs.ResponseError(cause=Exception("404"))
+                musicbrainzngs,
+                "browse_urls",
+                side_effect=musicbrainzngs.ResponseError(cause=Exception("404")),
             ),
             patch.object(musicbrainzngs, "search_artists", return_value={"artist-list": []}),
         ):
@@ -234,12 +234,14 @@ class TestResolveArtist:
     def test_name_search_error_returns_none(self) -> None:
         with (
             patch.object(
-                musicbrainzngs, "browse_urls",
-                side_effect=musicbrainzngs.ResponseError(cause=Exception("404"))
+                musicbrainzngs,
+                "browse_urls",
+                side_effect=musicbrainzngs.ResponseError(cause=Exception("404")),
             ),
             patch.object(
-                musicbrainzngs, "search_artists",
-                side_effect=musicbrainzngs.WebServiceError("server error")
+                musicbrainzngs,
+                "search_artists",
+                side_effect=musicbrainzngs.WebServiceError("server error"),
             ),
         ):
             result = resolve_artist(7987, "The Police")
@@ -248,12 +250,11 @@ class TestResolveArtist:
 
 # ── resolve_release_group ─────────────────────────────────────────────────────
 
+
 class TestResolveReleaseGroup:
     def test_url_match_navigates_to_release_group(self) -> None:
         with (
-            patch.object(
-                musicbrainzngs, "browse_urls", return_value=_release_url_response()
-            ),
+            patch.object(musicbrainzngs, "browse_urls", return_value=_release_url_response()),
             patch.object(
                 musicbrainzngs, "get_release_by_id", return_value=_release_by_id_response()
             ),
@@ -265,8 +266,9 @@ class TestResolveReleaseGroup:
         rg_result = {"release-group-list": [{"id": _RG_MBID}]}
         with (
             patch.object(
-                musicbrainzngs, "browse_urls",
-                side_effect=musicbrainzngs.ResponseError(cause=Exception("404"))
+                musicbrainzngs,
+                "browse_urls",
+                side_effect=musicbrainzngs.ResponseError(cause=Exception("404")),
             ),
             patch.object(musicbrainzngs, "search_release_groups", return_value=rg_result),
         ):
@@ -278,12 +280,8 @@ class TestResolveReleaseGroup:
         release_no_rg: dict[str, object] = {"release": {"id": _RELEASE_MBID, "release-group": {}}}
         rg_result = {"release-group-list": [{"id": _RG_MBID}]}
         with (
-            patch.object(
-                musicbrainzngs, "browse_urls", return_value=_release_url_response()
-            ),
-            patch.object(
-                musicbrainzngs, "get_release_by_id", return_value=release_no_rg
-            ),
+            patch.object(musicbrainzngs, "browse_urls", return_value=_release_url_response()),
+            patch.object(musicbrainzngs, "get_release_by_id", return_value=release_no_rg),
             patch.object(musicbrainzngs, "search_release_groups", return_value=rg_result),
         ):
             result = resolve_release_group(1873013, "The Dark Side of the Moon", "Pink Floyd")
@@ -292,12 +290,12 @@ class TestResolveReleaseGroup:
     def test_all_methods_fail_returns_none(self) -> None:
         with (
             patch.object(
-                musicbrainzngs, "browse_urls",
-                side_effect=musicbrainzngs.ResponseError(cause=Exception("404"))
+                musicbrainzngs,
+                "browse_urls",
+                side_effect=musicbrainzngs.ResponseError(cause=Exception("404")),
             ),
             patch.object(
-                musicbrainzngs, "search_release_groups",
-                return_value={"release-group-list": []}
+                musicbrainzngs, "search_release_groups", return_value={"release-group-list": []}
             ),
         ):
             result = resolve_release_group(9999, "Unknown Album", "Unknown Artist")
@@ -315,6 +313,7 @@ class TestResolveReleaseGroup:
 
 
 # ── resolve ───────────────────────────────────────────────────────────────────
+
 
 class TestResolve:
     def _cache(self) -> MbzCache:
@@ -341,8 +340,9 @@ class TestResolve:
         cache = self._cache()
         with (
             patch.object(musicbrainzngs, "browse_urls") as mock_browse,
-            patch.object(musicbrainzngs, "get_release_by_id",
-                         return_value=_release_by_id_response()),
+            patch.object(
+                musicbrainzngs, "get_release_by_id", return_value=_release_by_id_response()
+            ),
         ):
             mock_browse.side_effect = [
                 _artist_url_response(),
@@ -358,8 +358,9 @@ class TestResolve:
         cache = self._cache()
         with (
             patch.object(musicbrainzngs, "browse_urls") as mock_browse,
-            patch.object(musicbrainzngs, "search_release_groups",
-                         return_value={"release-group-list": []}),
+            patch.object(
+                musicbrainzngs, "search_release_groups", return_value={"release-group-list": []}
+            ),
         ):
             mock_browse.side_effect = [
                 _artist_url_response(),
@@ -375,13 +376,14 @@ class TestResolve:
         cache = self._cache()
         with (
             patch.object(
-                musicbrainzngs, "browse_urls",
-                side_effect=musicbrainzngs.ResponseError(cause=Exception("404"))
+                musicbrainzngs,
+                "browse_urls",
+                side_effect=musicbrainzngs.ResponseError(cause=Exception("404")),
             ),
-            patch.object(musicbrainzngs, "search_artists",
-                         return_value={"artist-list": []}),
-            patch.object(musicbrainzngs, "search_release_groups",
-                         return_value={"release-group-list": []}),
+            patch.object(musicbrainzngs, "search_artists", return_value={"artist-list": []}),
+            patch.object(
+                musicbrainzngs, "search_release_groups", return_value={"release-group-list": []}
+            ),
         ):
             result = resolve(_discogs_item(), cache)
 
@@ -394,8 +396,9 @@ class TestResolve:
         item = _discogs_item()
         with (
             patch.object(musicbrainzngs, "browse_urls") as mock_browse,
-            patch.object(musicbrainzngs, "get_release_by_id",
-                         return_value=_release_by_id_response()),
+            patch.object(
+                musicbrainzngs, "get_release_by_id", return_value=_release_by_id_response()
+            ),
         ):
             mock_browse.side_effect = [
                 _artist_url_response(),
@@ -414,13 +417,14 @@ class TestResolve:
         item = _discogs_item()
         with (
             patch.object(
-                musicbrainzngs, "browse_urls",
-                side_effect=musicbrainzngs.ResponseError(cause=Exception("404"))
+                musicbrainzngs,
+                "browse_urls",
+                side_effect=musicbrainzngs.ResponseError(cause=Exception("404")),
             ),
-            patch.object(musicbrainzngs, "search_artists",
-                         return_value={"artist-list": []}),
-            patch.object(musicbrainzngs, "search_release_groups",
-                         return_value={"release-group-list": []}),
+            patch.object(musicbrainzngs, "search_artists", return_value={"artist-list": []}),
+            patch.object(
+                musicbrainzngs, "search_release_groups", return_value={"release-group-list": []}
+            ),
         ):
             resolve(item, cache)
 

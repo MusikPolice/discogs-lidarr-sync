@@ -67,6 +67,6 @@ class RunReport:
     errors: int
     results: list[SyncResult] = field(default_factory=list)
     # Post-sync coverage snapshot (filled in by the CLI after apply_diff)
-    coverage_monitored: int = 0   # Discogs albums currently monitored in Lidarr
-    coverage_on_disk: int = 0     # of monitored, have at least one file on disk
-    coverage_wanted: int = 0      # of monitored, no files yet (queued for download)
+    coverage_monitored: int = 0  # Discogs albums currently monitored in Lidarr
+    coverage_on_disk: int = 0  # of monitored, have at least one file on disk
+    coverage_wanted: int = 0  # of monitored, no files yet (queued for download)

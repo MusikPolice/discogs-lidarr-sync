@@ -32,7 +32,7 @@ from pyarr import LidarrAPI
 
 from discogs_lidarr_sync.config import Settings
 
-_POLL_TIMEOUT = 120.0   # seconds before giving up
+_POLL_TIMEOUT = 120.0  # seconds before giving up
 _POLL_BASE_DELAY = 1.0  # initial retry interval
 _POLL_MAX_DELAY = 16.0  # cap for exponential backoff
 
@@ -65,11 +65,7 @@ def get_monitored_album_mbids(client: LidarrAPI) -> set[str]:
     being silently skipped as "already in Lidarr".
     """
     albums: list[dict[str, Any]] = client.get_album()
-    return {
-        a["foreignAlbumId"]
-        for a in albums
-        if a.get("foreignAlbumId") and a.get("monitored")
-    }
+    return {a["foreignAlbumId"] for a in albums if a.get("foreignAlbumId") and a.get("monitored")}
 
 
 def get_discogs_album_coverage(
@@ -110,6 +106,7 @@ def get_discogs_album_coverage(
 
 # ── Album local-library helpers ───────────────────────────────────────────────
 
+
 def _find_album_in_library(client: LidarrAPI, mbid: str) -> dict[str, Any] | None:
     """Return the Lidarr album record for *mbid* if it is in the local library.
 
@@ -133,6 +130,7 @@ def _set_album_monitored(client: LidarrAPI, album: dict[str, Any]) -> None:
 
 
 # ── Album lookup polling ──────────────────────────────────────────────────────
+
 
 def _poll_album_lookup(
     client: LidarrAPI,
@@ -186,6 +184,7 @@ def _poll_album_lookup(
 
 # ── Artist polling ────────────────────────────────────────────────────────────
 
+
 def _wait_for_artist_in_search(
     client: LidarrAPI,
     mbid: str,
@@ -230,6 +229,7 @@ def _wait_for_artist_in_search(
 
 # ── Public add helpers ────────────────────────────────────────────────────────
 
+
 def add_artist(
     client: LidarrAPI,
     mbid: str,
@@ -256,9 +256,7 @@ def add_artist(
         ) from exc
 
     if not results:
-        raise LidarrError(
-            f"No Lidarr lookup result for artist MBID {mbid!r} ({artist_name!r})"
-        )
+        raise LidarrError(f"No Lidarr lookup result for artist MBID {mbid!r} ({artist_name!r})")
 
     try:
         client.add_artist(
@@ -271,9 +269,7 @@ def add_artist(
             artist_search_for_missing_albums=False,
         )
     except Exception as exc:
-        raise LidarrError(
-            f"Failed to add artist MBID {mbid!r} ({artist_name!r}): {exc}"
-        ) from exc
+        raise LidarrError(f"Failed to add artist MBID {mbid!r} ({artist_name!r}): {exc}") from exc
 
     _wait_for_artist_in_search(client, mbid, artist_name, timeout=_poll_timeout)
 

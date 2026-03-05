@@ -147,9 +147,7 @@ def resolve_release_group(
     # 2. Release → release group (the UUID Lidarr needs)
     if release_mbid:
         try:
-            result = musicbrainzngs.get_release_by_id(
-                release_mbid, includes=["release-groups"]
-            )
+            result = musicbrainzngs.get_release_by_id(release_mbid, includes=["release-groups"])
             rg = result["release"].get("release-group", {})
             if rg_id := rg.get("id"):
                 return str(rg_id)

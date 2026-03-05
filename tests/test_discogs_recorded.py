@@ -29,7 +29,7 @@ def _assert_discogs_item_schema(item: object) -> None:
 
     assert isinstance(item, DiscogsItem)
     assert isinstance(item.discogs_release_id, int) and item.discogs_release_id > 0
-    assert isinstance(item.discogs_artist_id, int)   # 0 is valid for Various Artists
+    assert isinstance(item.discogs_artist_id, int)  # 0 is valid for Various Artists
     assert isinstance(item.artist_name, str) and item.artist_name
     assert isinstance(item.album_title, str) and item.album_title
     assert item.year is None or (isinstance(item.year, int) and item.year > 0)

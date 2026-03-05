@@ -15,6 +15,7 @@ _COLLECTION_URL = f"{_BASE}/users/testuser/collection/folders/0/releases"
 
 # ── Test-data helpers ─────────────────────────────────────────────────────────
 
+
 def _raw_item(
     release_id: int = 1,
     artist_id: int = 100,
@@ -57,6 +58,7 @@ def _page(releases: list[dict[str, object]], page: int = 1, pages: int = 1) -> d
 
 # ── normalize_item ────────────────────────────────────────────────────────────
 
+
 class TestNormalizeItem:
     def test_basic_fields(self) -> None:
         item = normalize_item(_raw_item())
@@ -93,6 +95,7 @@ class TestNormalizeItem:
 
 # ── is_vinyl ──────────────────────────────────────────────────────────────────
 
+
 class TestIsVinyl:
     def _item(self, formats: list[str]) -> DiscogsItem:
         return DiscogsItem(1, 100, "A", "B", 2020, formats)
@@ -115,6 +118,7 @@ class TestIsVinyl:
 
 
 # ── fetch_collection ──────────────────────────────────────────────────────────
+
 
 class TestFetchCollection:
     @resp.activate

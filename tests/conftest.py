@@ -15,6 +15,7 @@ load_dotenv()
 # VCR / pytest-recording configuration
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session")
 def vcr_config() -> dict[str, object]:
     """Global vcrpy config applied to all @pytest.mark.vcr tests.
@@ -45,6 +46,7 @@ def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:
 # ---------------------------------------------------------------------------
 # Credentials fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def discogs_vcr_credentials() -> dict[str, str]:
@@ -78,9 +80,7 @@ def discogs_credentials() -> dict[str, str]:
     token = os.getenv("DISCOGS_TOKEN", "").strip()
     username = os.getenv("DISCOGS_USERNAME", "").strip()
     if not token or not username:
-        pytest.skip(
-            "Set DISCOGS_TOKEN and DISCOGS_USERNAME in .env to run integration tests"
-        )
+        pytest.skip("Set DISCOGS_TOKEN and DISCOGS_USERNAME in .env to run integration tests")
     return {"token": token, "username": username}
 
 
@@ -121,7 +121,5 @@ def lidarr_credentials() -> dict[str, str]:
     url = os.getenv("LIDARR_URL", "").strip()
     api_key = os.getenv("LIDARR_API_KEY", "").strip()
     if not url or not api_key:
-        pytest.skip(
-            "Set LIDARR_URL and LIDARR_API_KEY in .env to run Lidarr integration tests"
-        )
+        pytest.skip("Set LIDARR_URL and LIDARR_API_KEY in .env to run Lidarr integration tests")
     return {"url": url, "api_key": api_key}

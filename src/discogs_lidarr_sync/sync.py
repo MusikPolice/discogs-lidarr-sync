@@ -47,17 +47,11 @@ def compute_diff(
 
         if not mbz.release_group_mbid:
             # No Release Group MBID — can't add to Lidarr.
-            to_skip.append(
-                SyncResult(item=item, mbz_ids=mbz, action=SyncAction.SKIPPED_UNRESOLVED)
-            )
+            to_skip.append(SyncResult(item=item, mbz_ids=mbz, action=SyncAction.SKIPPED_UNRESOLVED))
         elif mbz.release_group_mbid in album_mbids:
-            to_skip.append(
-                SyncResult(item=item, mbz_ids=mbz, action=SyncAction.SKIPPED_EXISTS)
-            )
+            to_skip.append(SyncResult(item=item, mbz_ids=mbz, action=SyncAction.SKIPPED_EXISTS))
         else:
-            to_add.append(
-                SyncResult(item=item, mbz_ids=mbz, action=SyncAction.ADDED_ALBUM)
-            )
+            to_add.append(SyncResult(item=item, mbz_ids=mbz, action=SyncAction.ADDED_ALBUM))
 
     return to_add, to_skip
 

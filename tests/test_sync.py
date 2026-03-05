@@ -84,6 +84,7 @@ def _mock_lidarr(existing_artist_mbids: set[str] | None = None) -> MagicMock:
 
 # ── compute_diff ───────────────────────────────────────────────────────────────
 
+
 class TestComputeDiff:
     def test_resolved_item_not_in_lidarr_goes_to_add(self) -> None:
         item = _discogs_item()
@@ -156,6 +157,7 @@ class TestComputeDiff:
 
 
 # ── apply_diff ─────────────────────────────────────────────────────────────────
+
 
 class TestApplyDiffDryRun:
     def test_dry_run_makes_no_api_calls(self) -> None:
@@ -230,6 +232,7 @@ class TestApplyDiffFullRun:
 
     def test_artist_add_failure_skips_album_and_records_error(self) -> None:
         from discogs_lidarr_sync.lidarr import LidarrError
+
         sr = self._sr()
         with (
             patch("discogs_lidarr_sync.sync.get_all_artist_mbids", return_value=set()),
@@ -244,6 +247,7 @@ class TestApplyDiffFullRun:
 
     def test_album_add_failure_records_error(self) -> None:
         from discogs_lidarr_sync.lidarr import LidarrError
+
         sr = self._sr()
         with (
             patch("discogs_lidarr_sync.sync.get_all_artist_mbids", return_value={_ARTIST_MBID}),
@@ -271,6 +275,7 @@ class TestApplyDiffFullRun:
 
     def test_error_in_one_item_does_not_abort_run(self) -> None:
         from discogs_lidarr_sync.lidarr import LidarrError
+
         sr1 = self._sr(release_id=1, rg_mbid=_RG_MBID)
         sr2 = self._sr(release_id=2, rg_mbid=_RG_MBID_2)
         add_album_calls = 0
@@ -310,6 +315,7 @@ class TestApplyDiffFullRun:
 
 # ── Idempotency ────────────────────────────────────────────────────────────────
 
+
 class TestIdempotency:
     def test_second_run_adds_nothing(self) -> None:
         """After a successful run, a second compute_diff produces an empty to_add."""
@@ -335,6 +341,7 @@ class TestIdempotency:
 
 
 # ── write_report ───────────────────────────────────────────────────────────────
+
 
 class TestWriteReport:
     def _report(self, results: list[SyncResult] | None = None) -> RunReport:
@@ -382,6 +389,7 @@ class TestWriteReport:
 
 
 # ── write_unresolved ───────────────────────────────────────────────────────────
+
 
 class TestWriteUnresolved:
     def _unresolved_sr(self, release_id: int = 99) -> SyncResult:

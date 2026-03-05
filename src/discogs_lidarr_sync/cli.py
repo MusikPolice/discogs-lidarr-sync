@@ -43,6 +43,7 @@ _console = Console()
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+
 def _load_or_exit(config: str) -> object:
     """Load settings and exit with a helpful message on failure."""
     try:
@@ -83,6 +84,7 @@ def _print_summary(report: RunReport) -> None:
 
 # ── Commands ───────────────────────────────────────────────────────────────────
 
+
 @click.group()
 def main() -> None:
     """Sync your Discogs vinyl collection to Lidarr."""
@@ -106,6 +108,7 @@ def sync(dry_run: bool, config: str, verbose: bool) -> None:
     """Fetch the Discogs vinyl collection and sync new albums to Lidarr."""
     settings = _load_or_exit(config)
     from discogs_lidarr_sync.config import Settings  # narrow type after _load_or_exit
+
     assert isinstance(settings, Settings)
 
     client = LidarrAPI(settings.lidarr_url, settings.lidarr_api_key)
@@ -146,8 +149,7 @@ def sync(dry_run: bool, config: str, verbose: bool) -> None:
         progress.update(
             t2,
             description=(
-                f"[green]✓[/green] Lidarr: "
-                f"{len(artist_mbids)} artists, {len(album_mbids)} albums"
+                f"[green]✓[/green] Lidarr: {len(artist_mbids)} artists, {len(album_mbids)} albums"
             ),
             total=1,
             completed=1,
@@ -169,8 +171,7 @@ def sync(dry_run: bool, config: str, verbose: bool) -> None:
     if verbose:
         for sr in to_skip:
             _console.print(
-                f"  [dim]skip[/dim]  {sr.item.artist_name} — "
-                f"{sr.item.album_title}  ({sr.action})"
+                f"  [dim]skip[/dim]  {sr.item.artist_name} — {sr.item.album_title}  ({sr.action})"
             )
 
     # ── Phase 5: Apply ────────────────────────────────────────────────────────
@@ -186,9 +187,7 @@ def sync(dry_run: bool, config: str, verbose: bool) -> None:
 
     # apply_diff only sees to_add; fill in the complete picture.
     report.total_vinyl = len(items)
-    report.skipped_exists = sum(
-        1 for sr in to_skip if sr.action == SyncAction.SKIPPED_EXISTS
-    )
+    report.skipped_exists = sum(1 for sr in to_skip if sr.action == SyncAction.SKIPPED_EXISTS)
     report.skipped_unresolved = sum(
         1 for sr in to_skip if sr.action == SyncAction.SKIPPED_UNRESOLVED
     )
@@ -207,8 +206,7 @@ def sync(dry_run: bool, config: str, verbose: bool) -> None:
     if verbose:
         for sr in report.results:
             _console.print(
-                f"  [green]{sr.action}[/green]  "
-                f"{sr.item.artist_name} — {sr.item.album_title}"
+                f"  [green]{sr.action}[/green]  {sr.item.artist_name} — {sr.item.album_title}"
             )
 
     # ── Phase 6: Persist ──────────────────────────────────────────────────────
@@ -232,6 +230,7 @@ def status(config: str) -> None:
     """Show current Discogs collection size and Lidarr library size."""
     settings = _load_or_exit(config)
     from discogs_lidarr_sync.config import Settings
+
     assert isinstance(settings, Settings)
 
     client = LidarrAPI(settings.lidarr_url, settings.lidarr_api_key)
@@ -321,13 +320,12 @@ def profiles(config: str) -> None:
     show_default=True,
     help="Path to .env config file.",
 )
-@click.confirmation_option(
-    prompt="This will delete the local MusicBrainz lookup cache. Continue?"
-)
+@click.confirmation_option(prompt="This will delete the local MusicBrainz lookup cache. Continue?")
 def clear_cache(config: str) -> None:
     """Delete the local MusicBrainz lookup cache."""
     settings = _load_or_exit(config)
     from discogs_lidarr_sync.config import Settings
+
     assert isinstance(settings, Settings)
 
     path = Path(settings.mbz_cache_path)

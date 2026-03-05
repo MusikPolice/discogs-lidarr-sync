@@ -45,12 +45,24 @@ def _artist_entry(mbid: str = _ARTIST_MBID) -> dict[str, object]:
 
 def _album_entry(mbid: str = _RG_MBID) -> dict[str, object]:
     """Unmonitored album — mirrors what Lidarr auto-indexes on artist add."""
-    return {"id": 1, "title": "Greatest Hits", "foreignAlbumId": mbid, "artist": {}, "monitored": False}  # noqa: E501
+    return {
+        "id": 1,
+        "title": "Greatest Hits",
+        "foreignAlbumId": mbid,
+        "artist": {},
+        "monitored": False,
+    }  # noqa: E501
 
 
 def _monitored_album_entry(mbid: str = _RG_MBID) -> dict[str, object]:
     """Album already monitored in Lidarr."""
-    return {"id": 1, "title": "Greatest Hits", "foreignAlbumId": mbid, "artist": {}, "monitored": True}  # noqa: E501
+    return {
+        "id": 1,
+        "title": "Greatest Hits",
+        "foreignAlbumId": mbid,
+        "artist": {},
+        "monitored": True,
+    }  # noqa: E501
 
 
 def _album_search_result(mbid: str = _RG_MBID) -> dict[str, object]:
@@ -59,6 +71,7 @@ def _album_search_result(mbid: str = _RG_MBID) -> dict[str, object]:
 
 
 # ── get_discogs_album_coverage ────────────────────────────────────────────────
+
 
 class TestGetDiscogsAlbumCoverage:
     def _lib(self, monitored: bool, track_file_count: int, mbid: str = _RG_MBID) -> dict:
@@ -71,13 +84,11 @@ class TestGetDiscogsAlbumCoverage:
     def test_counts_monitored_on_disk_and_wanted(self) -> None:
         client = _mock_client()
         client.get_album.return_value = [
-            self._lib(True, 10, "aaa"),   # monitored, on disk
-            self._lib(True, 0, "bbb"),    # monitored, wanted
-            self._lib(False, 5, "ccc"),   # unmonitored — excluded
+            self._lib(True, 10, "aaa"),  # monitored, on disk
+            self._lib(True, 0, "bbb"),  # monitored, wanted
+            self._lib(False, 5, "ccc"),  # unmonitored — excluded
         ]
-        monitored, on_disk, wanted = get_discogs_album_coverage(
-            client, {"aaa", "bbb", "ccc"}
-        )
+        monitored, on_disk, wanted = get_discogs_album_coverage(client, {"aaa", "bbb", "ccc"})
         assert monitored == 2
         assert on_disk == 1
         assert wanted == 1
@@ -115,6 +126,7 @@ class TestGetDiscogsAlbumCoverage:
 
 # ── get_all_artist_mbids ───────────────────────────────────────────────────────
 
+
 class TestGetAllArtistMbids:
     def test_returns_set_of_mbids(self) -> None:
         client = _mock_client()
@@ -151,6 +163,7 @@ class TestGetAllArtistMbids:
 
 # ── get_all_album_mbids ────────────────────────────────────────────────────────
 
+
 class TestGetAllAlbumMbids:
     def test_returns_set_of_mbids(self) -> None:
         client = _mock_client()
@@ -178,12 +191,13 @@ class TestGetAllAlbumMbids:
 
 # ── get_monitored_album_mbids ─────────────────────────────────────────────────
 
+
 class TestGetMonitoredAlbumMbids:
     def test_returns_only_monitored_mbids(self) -> None:
         client = _mock_client()
         client.get_album.return_value = [
-            _monitored_album_entry("aaa"),   # monitored — included
-            _album_entry("bbb"),             # unmonitored — excluded
+            _monitored_album_entry("aaa"),  # monitored — included
+            _album_entry("bbb"),  # unmonitored — excluded
         ]
         result = get_monitored_album_mbids(client)
         assert result == {"aaa"}
@@ -204,6 +218,7 @@ class TestGetMonitoredAlbumMbids:
 
 
 # ── add_artist ─────────────────────────────────────────────────────────────────
+
 
 class TestAddArtist:
     def test_calls_lookup_with_lidarr_prefix(self) -> None:
@@ -301,6 +316,7 @@ class TestAddArtistPolling:
 
 
 # ── add_album ──────────────────────────────────────────────────────────────────
+
 
 class TestAddAlbum:
     def test_calls_lookup_with_lidarr_prefix(self) -> None:

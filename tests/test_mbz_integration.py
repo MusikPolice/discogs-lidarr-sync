@@ -32,9 +32,7 @@ def test_resolve_artist_live() -> None:
 @pytest.mark.integration
 def test_resolve_release_group_live() -> None:
     """Two-step release → release-group lookup returns the correct MBID."""
-    result = resolve_release_group(
-        _DSOTM_RELEASE_ID, "The Dark Side of the Moon", "Pink Floyd"
-    )
+    result = resolve_release_group(_DSOTM_RELEASE_ID, "The Dark Side of the Moon", "Pink Floyd")
     assert result == _DSOTM_RG_ID
 
 
