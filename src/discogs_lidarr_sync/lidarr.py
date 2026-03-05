@@ -56,6 +56,22 @@ def get_all_album_mbids(client: LidarrAPI) -> set[str]:
     return {a["foreignAlbumId"] for a in albums if a.get("foreignAlbumId")}
 
 
+def get_monitored_album_mbids(client: LidarrAPI) -> set[str]:
+    """Return the set of MusicBrainz Release Group UUIDs for monitored albums only.
+
+    Unmonitored albums (e.g. auto-indexed by Lidarr when an artist is added
+    with monitor="none") are excluded.  Used by compute_diff so that those
+    albums flow through add_album() → upd_album(monitored=True) rather than
+    being silently skipped as "already in Lidarr".
+    """
+    albums: list[dict[str, Any]] = client.get_album()
+    return {
+        a["foreignAlbumId"]
+        for a in albums
+        if a.get("foreignAlbumId") and a.get("monitored")
+    }
+
+
 def get_discogs_album_coverage(
     client: LidarrAPI,
     release_group_mbids: set[str],

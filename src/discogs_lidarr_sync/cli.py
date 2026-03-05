@@ -32,6 +32,7 @@ from discogs_lidarr_sync.lidarr import (
     get_all_album_mbids,
     get_all_artist_mbids,
     get_discogs_album_coverage,
+    get_monitored_album_mbids,
 )
 from discogs_lidarr_sync.mbz import MbzCache, resolve
 from discogs_lidarr_sync.models import RunReport, SyncAction
@@ -138,6 +139,7 @@ def sync(dry_run: bool, config: str, verbose: bool) -> None:
         try:
             artist_mbids = get_all_artist_mbids(client)
             album_mbids = get_all_album_mbids(client)
+            monitored_album_mbids = get_monitored_album_mbids(client)
         except Exception as exc:
             _console.print(f"[red]Failed to read Lidarr library:[/red] {exc}")
             sys.exit(1)
@@ -159,7 +161,10 @@ def sync(dry_run: bool, config: str, verbose: bool) -> None:
         progress.update(t3, description="[green]✓[/green] MusicBrainz IDs resolved")
 
     # ── Phase 4: Diff ─────────────────────────────────────────────────────────
-    to_add, to_skip = compute_diff(items, artist_mbids, album_mbids, cache)
+    # Use monitored_album_mbids so that albums auto-indexed by Lidarr as
+    # unmonitored (when an artist is added with monitor="none") are treated as
+    # missing and flow through add_album() → upd_album(monitored=True).
+    to_add, to_skip = compute_diff(items, artist_mbids, monitored_album_mbids, cache)
 
     if verbose:
         for sr in to_skip:

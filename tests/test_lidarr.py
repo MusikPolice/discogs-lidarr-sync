@@ -14,6 +14,7 @@ from discogs_lidarr_sync.lidarr import (
     get_all_album_mbids,
     get_all_artist_mbids,
     get_discogs_album_coverage,
+    get_monitored_album_mbids,
 )
 
 # ── Test data helpers ──────────────────────────────────────────────────────────
@@ -172,6 +173,33 @@ class TestGetAllAlbumMbids:
             _album_entry(_RG_MBID),
         ]
         result = get_all_album_mbids(client)
+        assert result == {_RG_MBID}
+
+
+# ── get_monitored_album_mbids ─────────────────────────────────────────────────
+
+class TestGetMonitoredAlbumMbids:
+    def test_returns_only_monitored_mbids(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            _monitored_album_entry("aaa"),   # monitored — included
+            _album_entry("bbb"),             # unmonitored — excluded
+        ]
+        result = get_monitored_album_mbids(client)
+        assert result == {"aaa"}
+
+    def test_empty_library_returns_empty_set(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = []
+        assert get_monitored_album_mbids(client) == set()
+
+    def test_excludes_entries_without_foreign_album_id(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            {"id": 1, "title": "No MBID", "monitored": True},
+            _monitored_album_entry(_RG_MBID),
+        ]
+        result = get_monitored_album_mbids(client)
         assert result == {_RG_MBID}
 
 
