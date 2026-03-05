@@ -1,0 +1,56 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection:
+      - close
+      Content-Length:
+      - '0'
+      Host:
+      - musicbrainz.org
+      User-Agent:
+      - discogs-lidarr-sync/0.1 python-musicbrainzngs/0.7.1
+    method: GET
+    uri: https://musicbrainz.org/ws/2/url/?inc=artist-rels&resource=https%3A%2F%2Fwww.discogs.com%2Fartist%2F7987
+  response:
+    body:
+      string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <metadata xmlns="http://musicbrainz.org/ns/mmd-2.0#"><url id="959bb4e3-502b-4ab2-a72c-b5092b3605cf"><resource>https://www.discogs.com/artist/7987</resource><relation-list
+        target-type="artist"><relation type="discogs" type-id="04a5b104-a4c2-4bac-99a1-7b837c37d9e4"><target>9e0e2b01-41db-4008-bd8b-988977d6019a</target><direction>backward</direction><artist
+        id="9e0e2b01-41db-4008-bd8b-988977d6019a" type="Group" type-id="e431f5f6-b5d2-343d-8b36-72607fffb74b"><name>The
+        Police</name><sort-name>Police, The</sort-name><country>GB</country><disambiguation>British
+        rock band</disambiguation></artist></relation></relation-list></url></metadata>
+
+        '
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - close
+      Content-Type:
+      - application/xml; charset=utf-8
+      Date:
+      - Tue, 03 Mar 2026 01:48:51 GMT
+      ETag:
+      - '"0344e14371b3cd0fe5fff5e35dcc0f91"'
+      Server:
+      - Plack::Handler::Starlet
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Cache-Status:
+      - MISS
+      X-RateLimit-Limit:
+      - '1200'
+      X-RateLimit-Remaining:
+      - '1096'
+      X-RateLimit-Reset:
+      - '1772502533'
+      X-Runtime:
+      - '0.029562'
+    status:
+      code: 200
+      message: OK
+version: 1

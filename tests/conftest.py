@@ -43,6 +43,26 @@ def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:
     return os.path.join(os.path.dirname(__file__), "cassettes")
 
 
+@pytest.fixture(autouse=True)
+def skip_if_cassette_missing(request: pytest.FixtureRequest) -> None:
+    """Skip any @pytest.mark.vcr test whose cassette file is not present.
+
+    Some cassettes (e.g. large Lidarr library dumps) are excluded from the
+    repository via .gitignore.  Without this guard, vcrpy raises
+    CannotOverwriteExistingCassetteException in CI because it cannot replay
+    a cassette that does not exist and is not allowed to record a new one.
+    Re-record missing cassettes locally with --record-mode=all.
+    """
+    if request.node.get_closest_marker("vcr") is None:
+        return
+    cassette_dir = os.path.join(os.path.dirname(__file__), "cassettes")
+    cassette_path = os.path.join(cassette_dir, request.node.name + ".yaml")
+    if not os.path.exists(cassette_path):
+        pytest.skip(
+            f"Cassette not found: {request.node.name}.yaml — re-record with --record-mode=all"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Credentials fixtures
 # ---------------------------------------------------------------------------

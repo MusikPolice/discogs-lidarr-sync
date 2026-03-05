@@ -1,4 +1,4 @@
-# discogs-lidarr-sync
+# I'm in Exports and Imports
 
 One-way sync from a [Discogs](https://www.discogs.com/) vinyl collection to [Lidarr](https://lidarr.audio/).
 

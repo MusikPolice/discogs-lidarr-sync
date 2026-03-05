@@ -1,8 +1,11 @@
 # Credentials — never commit
 .env
 
-# VCR cassettes — can be large; regenerate locally with --record-mode=all
-tests/cassettes/
+# VCR cassettes — small ones (MBZ, Discogs) are committed; large Lidarr library
+# dumps are excluded because they exceed GitHub's 50 MB recommended limit.
+# Re-record locally with: uv run pytest tests/test_lidarr_recorded.py --record-mode=all
+tests/cassettes/test_get_all_album_mbids_returns_set.yaml
+tests/cassettes/test_get_all_artist_mbids_returns_set.yaml
 
 # Runtime output — ignore contents but keep the directory via .gitkeep
 .cache/*
