@@ -1,6 +1,9 @@
 # Credentials — never commit
 .env
 
+# VCR cassettes — can be large; regenerate locally with --record-mode=all
+tests/cassettes/
+
 # Runtime output — ignore contents but keep the directory via .gitkeep
 .cache/*
 !.cache/.gitkeep
