@@ -68,6 +68,17 @@ def get_monitored_album_mbids(client: LidarrAPI) -> set[str]:
     return {a["foreignAlbumId"] for a in albums if a.get("foreignAlbumId") and a.get("monitored")}
 
 
+def get_monitored_albums_with_stats(client: LidarrAPI) -> list[dict[str, Any]]:
+    """Return full album records for every monitored album in Lidarr.
+
+    Unlike get_monitored_album_mbids(), this returns the complete record so
+    that callers (e.g. the audit command) can access statistics, internal IDs,
+    and the embedded artist sub-object without a second API call.
+    """
+    albums: list[dict[str, Any]] = client.get_album()
+    return [a for a in albums if a.get("monitored")]
+
+
 def get_discogs_album_coverage(
     client: LidarrAPI,
     release_group_mbids: set[str],

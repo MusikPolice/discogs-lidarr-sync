@@ -18,6 +18,7 @@ Usage
 from __future__ import annotations
 
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import click
@@ -26,6 +27,7 @@ from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from discogs_lidarr_sync.audit import compute_audit, write_audit_csv
 from discogs_lidarr_sync.config import ConfigError, load_lidarr_settings, load_settings
 from discogs_lidarr_sync.discogs import fetch_collection
 from discogs_lidarr_sync.lidarr import (
@@ -33,6 +35,7 @@ from discogs_lidarr_sync.lidarr import (
     get_all_artist_mbids,
     get_discogs_album_coverage,
     get_monitored_album_mbids,
+    get_monitored_albums_with_stats,
 )
 from discogs_lidarr_sync.mbz import MbzCache, resolve
 from discogs_lidarr_sync.models import RunReport, SyncAction
@@ -310,6 +313,114 @@ def profiles(config: str) -> None:
     _console.print(
         "Set [bold]LIDARR_QUALITY_PROFILE_ID[/bold] and "
         "[bold]LIDARR_METADATA_PROFILE_ID[/bold] in your .env using the IDs above."
+    )
+
+
+@main.command()
+@click.option(
+    "--output",
+    default=None,
+    help="Path for the output CSV. Default: audit/audit_{timestamp}.csv",
+)
+@click.option(
+    "--config",
+    default=".env",
+    show_default=True,
+    help="Path to .env config file.",
+)
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Show each album evaluated.")
+def audit(output: str | None, config: str, verbose: bool) -> None:
+    """Find monitored Lidarr albums not present in the Discogs vinyl collection.
+
+    Exports results to a CSV with one row per album.  All rows default to
+    action=delete.  Open the CSV in a spreadsheet, change individual rows to
+    action=keep for albums you want to retain, then pass it to the future
+    ``purge`` command for bulk deletion.
+    """
+    settings = _load_or_exit(config)
+    from discogs_lidarr_sync.config import Settings
+
+    assert isinstance(settings, Settings)
+
+    client = LidarrAPI(settings.lidarr_url, settings.lidarr_api_key)
+    cache = MbzCache(settings.mbz_cache_path)
+    cache.load()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        console=_console,
+    ) as progress:
+        t1 = progress.add_task("Fetching Discogs collection…", total=None)
+        try:
+            items = fetch_collection(settings.discogs_username, settings.discogs_token)
+        except Exception as exc:
+            _console.print(f"[red]Failed to fetch Discogs collection:[/red] {exc}")
+            sys.exit(1)
+        progress.update(
+            t1,
+            description=f"[green]✓[/green] Fetched {len(items)} vinyl records",
+            total=1,
+            completed=1,
+        )
+
+        t2 = progress.add_task("Reading Lidarr library…", total=None)
+        try:
+            lidarr_albums = get_monitored_albums_with_stats(client)
+        except Exception as exc:
+            _console.print(f"[red]Failed to read Lidarr library:[/red] {exc}")
+            sys.exit(1)
+        progress.update(
+            t2,
+            description=f"[green]✓[/green] Lidarr: {len(lidarr_albums)} monitored albums",
+            total=1,
+            completed=1,
+        )
+
+        t3 = progress.add_task("Resolving MusicBrainz IDs…", total=len(items))
+        for item in items:
+            resolve(item, cache)
+            progress.advance(t3)
+        progress.update(t3, description="[green]✓[/green] MusicBrainz IDs resolved")
+
+    rows = compute_audit(items, cache, lidarr_albums)
+
+    if verbose:
+        for row in rows:
+            _console.print(
+                f"  {row.artist_name} — {row.album_title}"
+                f"  ({row.tracks_owned}/{row.total_tracks} tracks,"
+                f" {row.pct_owned:.1f}%)"
+            )
+
+    out_path = (
+        Path(output)
+        if output
+        else Path("audit") / f"audit_{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.csv"
+    )
+    write_audit_csv(rows, out_path)
+    cache.save()
+
+    discogs_matched = len(lidarr_albums) - len(rows)
+    unresolved_count = sum(1 for r in rows if r.discogs_match == "unresolved")
+
+    table = Table(title="Audit Summary", show_header=True)
+    table.add_column("", style="bold", min_width=35)
+    table.add_column("Count", justify="right", min_width=6)
+    table.add_row("Discogs vinyl records", str(len(items)))
+    table.add_row("Monitored Lidarr albums", str(len(lidarr_albums)))
+    table.add_row("Matched to Discogs (skipped)", str(discogs_matched))
+    table.add_row("Unresolved MBZ (included, flagged)", str(unresolved_count))
+    table.add_row("Exported to audit CSV", str(len(rows)))
+
+    _console.print()
+    _console.print(table)
+    _console.print()
+    _console.print(f"Output written to: [bold]{out_path}[/bold]")
+    _console.print(
+        "Sort by [bold]pct_owned[/bold] ascending to find the strongest deletion candidates."
     )
 
 

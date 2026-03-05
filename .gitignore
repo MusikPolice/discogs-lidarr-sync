@@ -12,6 +12,8 @@ tests/cassettes/test_get_all_artist_mbids_returns_set.yaml
 !.cache/.gitkeep
 runs/*
 !runs/.gitkeep
+audit/*
+!audit/.gitkeep
 out/*
 
 # Python

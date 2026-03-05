@@ -15,6 +15,7 @@ from discogs_lidarr_sync.lidarr import (
     get_all_artist_mbids,
     get_discogs_album_coverage,
     get_monitored_album_mbids,
+    get_monitored_albums_with_stats,
 )
 
 # ── Test data helpers ──────────────────────────────────────────────────────────
@@ -187,6 +188,33 @@ class TestGetAllAlbumMbids:
         ]
         result = get_all_album_mbids(client)
         assert result == {_RG_MBID}
+
+
+# ── get_monitored_albums_with_stats ──────────────────────────────────────────
+
+
+class TestGetMonitoredAlbumsWithStats:
+    def test_returns_only_monitored_albums(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            _monitored_album_entry("aaa"),   # monitored — included
+            _album_entry("bbb"),             # unmonitored — excluded
+        ]
+        result = get_monitored_albums_with_stats(client)
+        assert len(result) == 1
+        assert result[0]["foreignAlbumId"] == "aaa"
+
+    def test_returns_full_records(self) -> None:
+        """Full dict is returned, not just MBIDs — caller needs statistics etc."""
+        client = _mock_client()
+        client.get_album.return_value = [_monitored_album_entry()]
+        result = get_monitored_albums_with_stats(client)
+        assert result[0] is client.get_album.return_value[0]
+
+    def test_empty_library_returns_empty_list(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = []
+        assert get_monitored_albums_with_stats(client) == []
 
 
 # ── get_monitored_album_mbids ─────────────────────────────────────────────────
