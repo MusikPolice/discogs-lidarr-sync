@@ -78,6 +78,32 @@ class AuditRow:
 
 
 @dataclass
+class PurgeRow:
+    """A single row read from an audit CSV for the purge command."""
+
+    action: str  # "delete" | "keep" | other (normalised: stripped + lowercased)
+    artist_name: str
+    album_title: str
+    lidarr_album_id: int
+    lidarr_artist_id: int
+
+
+@dataclass
+class PurgeReport:
+    """Aggregate summary of a purge run."""
+
+    dry_run: bool
+    total_rows: int  # rows read from CSV (CLI fills this in after apply_purge)
+    to_delete: int  # rows with action == "delete"
+    skipped_keep: int  # rows with action != "delete" (CLI fills this in)
+    already_gone: int  # album not found in Lidarr (already deleted)
+    albums_deleted: int
+    artists_deleted: int
+    errors: int
+    error_details: list[str] = field(default_factory=list)
+
+
+@dataclass
 class RunReport:
     """Aggregate summary of a single sync run."""
 

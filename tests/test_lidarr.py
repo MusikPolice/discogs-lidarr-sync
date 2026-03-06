@@ -9,11 +9,15 @@ import pytest
 from discogs_lidarr_sync.config import Settings
 from discogs_lidarr_sync.lidarr import (
     LidarrError,
+    LidarrNotFoundError,
     add_album,
     add_artist,
+    delete_album,
+    delete_artist,
     get_all_album_mbids,
     get_all_artist_mbids,
     get_discogs_album_coverage,
+    get_monitored_album_count_for_artist,
     get_monitored_album_mbids,
     get_monitored_albums_with_stats,
 )
@@ -506,3 +510,100 @@ class TestAddAlbumFallback:
         client.get_album.side_effect = [not_yet, present]
         add_album(client, _RG_MBID, _ARTIST_MBID, _settings(), _poll_timeout=0.0)
         client.upd_album.assert_called_once()
+
+
+# ── delete_album ───────────────────────────────────────────────────────────────
+
+
+class TestDeleteAlbum:
+    def test_calls_delete_with_correct_path(self) -> None:
+        client = _mock_client()
+        delete_album(client, 42)
+        client._delete.assert_called_once_with(
+            "album/42", client.ver_uri, params={"deleteFiles": False}
+        )
+
+    def test_delete_files_true_forwarded(self) -> None:
+        client = _mock_client()
+        delete_album(client, 42, delete_files=True)
+        client._delete.assert_called_once_with(
+            "album/42", client.ver_uri, params={"deleteFiles": True}
+        )
+
+    def test_404_raises_lidarr_not_found_error(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = Exception("404 Not Found")
+        with pytest.raises(LidarrNotFoundError):
+            delete_album(client, 42)
+
+    def test_non_404_raises_lidarr_error(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = Exception("500 Internal Server Error")
+        with pytest.raises(LidarrError):
+            delete_album(client, 42)
+
+    def test_lidarr_not_found_is_subclass_of_lidarr_error(self) -> None:
+        assert issubclass(LidarrNotFoundError, LidarrError)
+
+
+# ── delete_artist ──────────────────────────────────────────────────────────────
+
+
+class TestDeleteArtist:
+    def test_calls_delete_with_correct_path(self) -> None:
+        client = _mock_client()
+        delete_artist(client, 7)
+        client._delete.assert_called_once_with(
+            "artist/7", client.ver_uri, params={"deleteFiles": False}
+        )
+
+    def test_delete_files_true_forwarded(self) -> None:
+        client = _mock_client()
+        delete_artist(client, 7, delete_files=True)
+        client._delete.assert_called_once_with(
+            "artist/7", client.ver_uri, params={"deleteFiles": True}
+        )
+
+    def test_404_raises_lidarr_not_found_error(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = Exception("404 Not Found")
+        with pytest.raises(LidarrNotFoundError):
+            delete_artist(client, 7)
+
+    def test_non_404_raises_lidarr_error(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = Exception("500 Internal Server Error")
+        with pytest.raises(LidarrError):
+            delete_artist(client, 7)
+
+
+# ── get_monitored_album_count_for_artist ──────────────────────────────────────
+
+
+class TestGetMonitoredAlbumCountForArtist:
+    def _album(self, artist_id: int, monitored: bool) -> dict:
+        return {"artist": {"id": artist_id}, "monitored": monitored, "foreignAlbumId": "x"}
+
+    def test_counts_only_monitored_albums(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            self._album(5, True),   # counted
+            self._album(5, True),   # counted
+            self._album(5, True),   # counted
+            self._album(5, False),  # unmonitored — excluded
+            self._album(5, False),  # unmonitored — excluded
+        ]
+        assert get_monitored_album_count_for_artist(client, 5) == 3
+
+    def test_excludes_other_artists(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            self._album(5, True),   # artist 5 — counted
+            self._album(6, True),   # artist 6 — excluded
+        ]
+        assert get_monitored_album_count_for_artist(client, 5) == 1
+
+    def test_returns_zero_when_all_deleted(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = []
+        assert get_monitored_album_count_for_artist(client, 5) == 0

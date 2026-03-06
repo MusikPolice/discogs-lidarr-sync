@@ -2,7 +2,7 @@
 
 One-way sync from a [Discogs](https://www.discogs.com/) vinyl collection to [Lidarr](https://lidarr.audio/).
 
-Records present in Discogs but absent from Lidarr are added. Nothing is ever removed from Lidarr. The script is safe to re-run repeatedly.
+Records present in Discogs but absent from Lidarr are added. The sync is additive — nothing is removed automatically. A separate `audit` / `purge` workflow lets you review and selectively remove albums that are no longer in your collection. The script is safe to re-run repeatedly.
 
 ---
 
@@ -88,6 +88,60 @@ uv run discogs-lidarr-sync profiles
 ```
 
 Prints a table of all quality profiles and metadata profiles configured in your Lidarr instance, with their numeric IDs. Only `LIDARR_URL` and `LIDARR_API_KEY` need to be set — run this command before filling in the profile ID variables in `.env`.
+
+### `audit` — find Lidarr albums absent from your Discogs collection
+
+```bash
+uv run discogs-lidarr-sync audit
+```
+
+Compares every monitored album in Lidarr against your current Discogs vinyl collection and exports a CSV of albums that have no matching Discogs record. All rows default to `action=delete`. Open the CSV in a spreadsheet, change `action` to `keep` for any album you want to retain, then pass it to `purge`.
+
+Options:
+
+| Flag | Description |
+|---|---|
+| `--output PATH` | Path for the output CSV. Default: `audit/audit_<timestamp>.csv` |
+| `--verbose` / `-v` | Print each album found during the audit |
+| `--config PATH` | Path to a custom `.env` file (default: `.env`) |
+
+A summary table is printed at the end showing how many albums were matched, how many were exported to the CSV, and how many could not be resolved via MusicBrainz.
+
+### `purge` — delete albums (and orphaned artists) from Lidarr
+
+```bash
+uv run discogs-lidarr-sync purge audit/audit_20240101T120000Z.csv
+```
+
+Reads an audit CSV produced by the `audit` command and deletes every album whose `action` column is set to `delete`. After album deletions, any artist that has no remaining monitored albums is also removed.
+
+**Always review the CSV carefully before running purge.** Use `--dry-run` to confirm what will be deleted.
+
+Options:
+
+| Flag | Description |
+|---|---|
+| `--dry-run` | Show what would be deleted without making any changes |
+| `--delete-files` | Also delete files from disk. Default: remove Lidarr entries only, leave files untouched |
+| `--verbose` / `-v` | Print each album and artist as it is deleted |
+| `--config PATH` | Path to a custom `.env` file (default: `.env`) |
+
+#### Typical workflow
+
+```bash
+# 1. Generate the audit CSV
+uv run discogs-lidarr-sync audit
+
+# 2. Open the CSV in a spreadsheet. Change action=keep for anything you want to retain.
+
+# 3. Preview what will be deleted
+uv run discogs-lidarr-sync purge audit/audit_<timestamp>.csv --dry-run --verbose
+
+# 4. Execute the purge
+uv run discogs-lidarr-sync purge audit/audit_<timestamp>.csv --verbose
+```
+
+---
 
 ### `clear-cache` — delete the MBZ cache
 

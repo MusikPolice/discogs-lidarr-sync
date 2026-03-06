@@ -41,6 +41,10 @@ class LidarrError(Exception):
     """Raised when a Lidarr API call fails in an unexpected or unrecoverable way."""
 
 
+class LidarrNotFoundError(LidarrError):
+    """Raised when a Lidarr resource is not found (HTTP 404)."""
+
+
 def get_all_artist_mbids(client: LidarrAPI) -> set[str]:
     """Return the set of MusicBrainz Artist UUIDs for all artists in Lidarr."""
     artists: list[dict[str, Any]] = client.get_artist()
@@ -352,3 +356,68 @@ def add_album(
                 _set_album_monitored(client, album)
                 return
         raise LidarrError(f"Failed to add album MBID {mbid!r}: {exc}") from exc
+
+
+# ── Purge helpers ─────────────────────────────────────────────────────────────
+
+
+def _is_not_found(exc: Exception) -> bool:
+    """Return True if *exc* looks like an HTTP 404 response."""
+    msg = str(exc).lower()
+    return "404" in msg or "not found" in msg
+
+
+def delete_album(
+    client: LidarrAPI,
+    lidarr_id: int,
+    delete_files: bool = False,
+) -> None:
+    """Delete an album from Lidarr by its internal ID.
+
+    delete_files=True also removes associated files from disk.
+    Raises LidarrNotFoundError when the album does not exist (HTTP 404) so
+    callers can distinguish "already gone" from genuine failures.
+    Raises LidarrError on other unexpected API failures.
+    """
+    try:
+        client._delete(f"album/{lidarr_id}", client.ver_uri, params={"deleteFiles": delete_files})
+    except Exception as exc:
+        if _is_not_found(exc):
+            raise LidarrNotFoundError(f"Album {lidarr_id} not found in Lidarr") from exc
+        raise LidarrError(f"Failed to delete album {lidarr_id}: {exc}") from exc
+
+
+def delete_artist(
+    client: LidarrAPI,
+    lidarr_id: int,
+    delete_files: bool = False,
+) -> None:
+    """Delete an artist from Lidarr by its internal ID.
+
+    delete_files=True also removes all associated files from disk.
+    Raises LidarrNotFoundError on HTTP 404, LidarrError on other failures.
+    """
+    try:
+        client._delete(f"artist/{lidarr_id}", client.ver_uri, params={"deleteFiles": delete_files})
+    except Exception as exc:
+        if _is_not_found(exc):
+            raise LidarrNotFoundError(f"Artist {lidarr_id} not found in Lidarr") from exc
+        raise LidarrError(f"Failed to delete artist {lidarr_id}: {exc}") from exc
+
+
+def get_monitored_album_count_for_artist(
+    client: LidarrAPI,
+    lidarr_artist_id: int,
+) -> int:
+    """Return the number of monitored albums for a given artist internal ID.
+
+    Used after album deletion to decide whether to also delete the artist.
+    Unmonitored albums (auto-indexed by Lidarr when the artist was added)
+    are not counted.
+    """
+    albums: list[dict[str, Any]] = client.get_album()
+    return sum(
+        1
+        for a in albums
+        if a.get("artist", {}).get("id") == lidarr_artist_id and a.get("monitored")
+    )

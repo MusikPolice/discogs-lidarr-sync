@@ -39,6 +39,7 @@ from discogs_lidarr_sync.lidarr import (
 )
 from discogs_lidarr_sync.mbz import MbzCache, resolve
 from discogs_lidarr_sync.models import RunReport, SyncAction
+from discogs_lidarr_sync.purge import apply_purge, compute_purge, read_purge_csv
 from discogs_lidarr_sync.sync import apply_diff, compute_diff, write_report, write_unresolved
 
 _console = Console()
@@ -422,6 +423,122 @@ def audit(output: str | None, config: str, verbose: bool) -> None:
     _console.print(
         "Sort by [bold]pct_owned[/bold] ascending to find the strongest deletion candidates."
     )
+
+
+@main.command()
+@click.argument("input", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show what would be deleted without making any changes.",
+)
+@click.option(
+    "--delete-files",
+    is_flag=True,
+    default=False,
+    help=(
+        "Also delete files from disk when removing albums and artists.  "
+        "Default: remove Lidarr monitoring entries only, leave files untouched."
+    ),
+)
+@click.option(
+    "--config",
+    default=".env",
+    show_default=True,
+    help="Path to .env config file.",
+)
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Print each album processed.")
+def purge(input: Path, dry_run: bool, delete_files: bool, config: str, verbose: bool) -> None:
+    """Delete Lidarr albums listed in an audit CSV with action=delete.
+
+    INPUT is the path to a CSV file produced by the audit command.  Edit the
+    file in a spreadsheet first, changing action to "keep" for any album you
+    want to retain.
+    """
+    import warnings as _warnings
+
+    with _warnings.catch_warnings(record=True) as _caught:
+        _warnings.simplefilter("always")
+        try:
+            rows = read_purge_csv(input)
+        except (ValueError, OSError) as exc:
+            _console.print(f"[red bold]Error reading CSV:[/red bold] {exc}")
+            sys.exit(1)
+    for w in _caught:
+        _console.print(f"[yellow]Warning:[/yellow] {w.message}")
+
+    to_delete, to_skip = compute_purge(rows)
+
+    if verbose:
+        for row in to_skip:
+            _console.print(f"  [dim]keep[/dim]  {row.artist_name} — {row.album_title}")
+
+    settings = _load_or_exit(config)
+    from discogs_lidarr_sync.config import Settings
+
+    assert isinstance(settings, Settings)
+
+    client = LidarrAPI(settings.lidarr_url, settings.lidarr_api_key)
+
+    if verbose:
+        # Skip the spinner so per-item log lines aren't suppressed.
+        if dry_run:
+            for row in to_delete:
+                _console.print(
+                    f"  [dim]would delete[/dim]  {row.artist_name} — {row.album_title}"
+                )
+        report = apply_purge(
+            to_delete,
+            client,
+            dry_run=dry_run,
+            delete_files=delete_files,
+            log=_console.print,
+        )
+    else:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=_console,
+            transient=True,
+        ) as p:
+            label = "Simulating purge" if dry_run else "Purging from Lidarr"
+            p.add_task(f"{label}…", total=None)
+            report = apply_purge(to_delete, client, dry_run=dry_run, delete_files=delete_files)
+
+    report.skipped_keep = len(to_skip)
+    report.total_rows = len(rows)
+
+    title = "Purge Summary (dry run)" if dry_run else "Purge Summary"
+    table = Table(title=title, show_header=False)
+    table.add_column("", style="bold", min_width=35)
+    table.add_column("Count", justify="right", min_width=6)
+    table.add_row("Albums to delete (from CSV)", str(report.to_delete))
+    table.add_row("Albums skipped (keep)", str(report.skipped_keep))
+    table.add_row("Albums already gone in Lidarr", str(report.already_gone))
+    table.add_row(
+        "Albums deleted",
+        str(report.albums_deleted),
+        style="green" if report.albums_deleted > 0 else "",
+    )
+    table.add_row(
+        "Artists deleted",
+        str(report.artists_deleted),
+        style="green" if report.artists_deleted > 0 else "",
+    )
+    table.add_row(
+        "Errors",
+        str(report.errors),
+        style="red" if report.errors > 0 else "",
+    )
+
+    _console.print()
+    _console.print(table)
+
+    if report.error_details:
+        _console.print()
+        for detail in report.error_details:
+            _console.print(f"  [red]Error:[/red] {detail}")
 
 
 @main.command("clear-cache")
