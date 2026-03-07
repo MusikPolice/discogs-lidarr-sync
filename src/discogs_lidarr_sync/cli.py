@@ -31,11 +31,11 @@ from discogs_lidarr_sync.audit import compute_audit, write_audit_csv
 from discogs_lidarr_sync.config import ConfigError, load_lidarr_settings, load_settings
 from discogs_lidarr_sync.discogs import fetch_collection
 from discogs_lidarr_sync.lidarr import (
+    get_albums_for_audit,
     get_all_album_mbids,
     get_all_artist_mbids,
     get_discogs_album_coverage,
     get_monitored_album_mbids,
-    get_monitored_albums_with_stats,
 )
 from discogs_lidarr_sync.mbz import MbzCache, resolve
 from discogs_lidarr_sync.models import RunReport, SyncAction
@@ -369,13 +369,13 @@ def audit(output: str | None, config: str, verbose: bool) -> None:
 
         t2 = progress.add_task("Reading Lidarr library…", total=None)
         try:
-            lidarr_albums = get_monitored_albums_with_stats(client)
+            lidarr_albums = get_albums_for_audit(client)
         except Exception as exc:
             _console.print(f"[red]Failed to read Lidarr library:[/red] {exc}")
             sys.exit(1)
         progress.update(
             t2,
-            description=f"[green]✓[/green] Lidarr: {len(lidarr_albums)} monitored albums",
+            description=f"[green]✓[/green] Lidarr: {len(lidarr_albums)} albums to audit",
             total=1,
             completed=1,
         )
@@ -411,7 +411,7 @@ def audit(output: str | None, config: str, verbose: bool) -> None:
     table.add_column("", style="bold", min_width=35)
     table.add_column("Count", justify="right", min_width=6)
     table.add_row("Discogs vinyl records", str(len(items)))
-    table.add_row("Monitored Lidarr albums", str(len(lidarr_albums)))
+    table.add_row("Lidarr albums audited", str(len(lidarr_albums)))
     table.add_row("Matched to Discogs (skipped)", str(discogs_matched))
     table.add_row("Unresolved MBZ (included, flagged)", str(unresolved_count))
     table.add_row("Exported to audit CSV", str(len(rows)))

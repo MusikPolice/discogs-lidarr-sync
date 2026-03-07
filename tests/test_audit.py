@@ -52,6 +52,7 @@ def _lidarr_album(
     artist_mbid: str = _ARTIST_MBID,
     title: str = "Ghost in the Machine",
     release_date: str = "1981-10-02T00:00:00Z",
+    monitored: bool = True,
     track_file_count: int = 5,
     total_track_count: int = 10,
     lidarr_album_id: int = 42,
@@ -61,7 +62,7 @@ def _lidarr_album(
         "id": lidarr_album_id,
         "title": title,
         "foreignAlbumId": album_mbid,
-        "monitored": True,
+        "monitored": monitored,
         "releaseDate": release_date,
         "artist": {
             "id": lidarr_artist_id,
@@ -191,6 +192,15 @@ class TestComputeAudit:
         rows = compute_audit([], cache, [_lidarr_album(_RG_MBID_B)])
         assert len(rows) == 1
 
+    def test_monitored_field_reflects_album_state(self) -> None:
+        """monitored column mirrors the Lidarr album's monitored flag."""
+        cache = _warm_cache()
+        monitored_album = _lidarr_album(_RG_MBID_B, monitored=True)
+        unmonitored_album = _lidarr_album(_RG_MBID_B, monitored=False, lidarr_album_id=99)
+        rows = compute_audit([], cache, [monitored_album, unmonitored_album])
+        assert rows[0].monitored is True
+        assert rows[1].monitored is False
+
 
 # ── write_audit_csv ───────────────────────────────────────────────────────────
 
@@ -201,6 +211,7 @@ def _sample_row(**kwargs: object) -> AuditRow:
         "artist_name": "The Police",
         "album_title": "Ghost in the Machine",
         "year": 1981,
+        "monitored": True,
         "tracks_owned": 5,
         "total_tracks": 10,
         "pct_owned": 50.0,
@@ -223,7 +234,7 @@ class TestWriteAuditCsv:
             assert reader.fieldnames is not None
             assert "action" == reader.fieldnames[0], "action must be the first column"
             expected = {
-                "action", "artist_name", "album_title", "year",
+                "action", "artist_name", "album_title", "year", "monitored",
                 "tracks_owned", "total_tracks", "pct_owned", "discogs_match",
                 "album_mbid", "artist_mbid", "lidarr_album_id", "lidarr_artist_id",
             }

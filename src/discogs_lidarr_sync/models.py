@@ -57,16 +57,18 @@ class SyncResult:
 class AuditRow:
     """A single row in a library audit export.
 
-    Represents a monitored Lidarr album that is absent from (or unresolvable
-    against) the user's Discogs vinyl collection.  The *action* field defaults
-    to "delete" so the user can opt rows *out* of deletion in a spreadsheet
-    before passing the file to the future ``purge`` command.
+    Represents a Lidarr album (monitored, or unmonitored with files on disk)
+    that is absent from (or unresolvable against) the user's Discogs vinyl
+    collection.  The *action* field defaults to "delete" so the user can opt
+    rows *out* of deletion in a spreadsheet before passing the file to the
+    ``purge`` command.
     """
 
     action: str  # "delete" (default) | "keep" (user-set in spreadsheet)
     artist_name: str
     album_title: str
     year: int | None
+    monitored: bool
     tracks_owned: int
     total_tracks: int
     pct_owned: float

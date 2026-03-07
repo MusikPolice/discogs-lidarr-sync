@@ -14,6 +14,7 @@ from discogs_lidarr_sync.lidarr import (
     add_artist,
     delete_album,
     delete_artist,
+    get_albums_for_audit,
     get_all_album_mbids,
     get_all_artist_mbids,
     get_discogs_album_coverage,
@@ -48,7 +49,7 @@ def _artist_entry(mbid: str = _ARTIST_MBID) -> dict[str, object]:
     return {"id": 1, "artistName": "The Police", "foreignArtistId": mbid}
 
 
-def _album_entry(mbid: str = _RG_MBID) -> dict[str, object]:
+def _album_entry(mbid: str = _RG_MBID, *, track_file_count: int = 0) -> dict[str, object]:
     """Unmonitored album — mirrors what Lidarr auto-indexes on artist add."""
     return {
         "id": 1,
@@ -56,6 +57,7 @@ def _album_entry(mbid: str = _RG_MBID) -> dict[str, object]:
         "foreignAlbumId": mbid,
         "artist": {},
         "monitored": False,
+        "statistics": {"trackFileCount": track_file_count},
     }  # noqa: E501
 
 
@@ -219,6 +221,49 @@ class TestGetMonitoredAlbumsWithStats:
         client = _mock_client()
         client.get_album.return_value = []
         assert get_monitored_albums_with_stats(client) == []
+
+
+# ── get_albums_for_audit ──────────────────────────────────────────────────────
+
+
+class TestGetAlbumsForAudit:
+    def test_includes_monitored_albums(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [_monitored_album_entry("aaa")]
+        result = get_albums_for_audit(client)
+        assert len(result) == 1
+        assert result[0]["foreignAlbumId"] == "aaa"
+
+    def test_includes_unmonitored_albums_with_files(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [_album_entry("bbb", track_file_count=2)]
+        result = get_albums_for_audit(client)
+        assert len(result) == 1
+        assert result[0]["foreignAlbumId"] == "bbb"
+
+    def test_excludes_unmonitored_albums_without_files(self) -> None:
+        """Ghost catalog entries — no files, not monitored — must be excluded."""
+        client = _mock_client()
+        client.get_album.return_value = [_album_entry("ccc", track_file_count=0)]
+        result = get_albums_for_audit(client)
+        assert result == []
+
+    def test_mixed_returns_only_auditable(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            _monitored_album_entry("aaa"),          # monitored — included
+            _album_entry("bbb", track_file_count=1),  # unmonitored with files — included
+            _album_entry("ccc", track_file_count=0),  # ghost entry — excluded
+        ]
+        result = get_albums_for_audit(client)
+        assert len(result) == 2
+        mbids = {r["foreignAlbumId"] for r in result}
+        assert mbids == {"aaa", "bbb"}
+
+    def test_empty_library_returns_empty_list(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = []
+        assert get_albums_for_audit(client) == []
 
 
 # ── get_monitored_album_mbids ─────────────────────────────────────────────────

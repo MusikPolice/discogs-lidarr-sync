@@ -83,6 +83,28 @@ def get_monitored_albums_with_stats(client: LidarrAPI) -> list[dict[str, Any]]:
     return [a for a in albums if a.get("monitored")]
 
 
+def get_albums_for_audit(client: LidarrAPI) -> list[dict[str, Any]]:
+    """Return all Lidarr album records that should appear in an audit.
+
+    Includes:
+    - All monitored albums.
+    - Unmonitored albums that have at least one file on disk
+      (statistics.trackFileCount > 0).
+
+    Excludes unmonitored albums with no files — these are ghost catalog entries
+    that Lidarr auto-indexes when an artist is added with monitor="none".
+    Including them would flood the audit with hundreds of irrelevant rows.
+    """
+    albums: list[dict[str, Any]] = client.get_album()
+    result = []
+    for a in albums:
+        if a.get("monitored"):
+            result.append(a)
+        elif (a.get("statistics") or {}).get("trackFileCount", 0) > 0:
+            result.append(a)
+    return result
+
+
 def get_discogs_album_coverage(
     client: LidarrAPI,
     release_group_mbids: set[str],

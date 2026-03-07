@@ -1,13 +1,13 @@
-"""Library audit: identify monitored Lidarr albums absent from Discogs.
+"""Library audit: identify Lidarr albums absent from Discogs.
 
 compute_audit() cross-references the user's Discogs vinyl collection (resolved
-to MBZ Release Group MBIDs via the on-disk cache) against the list of monitored
-Lidarr albums, and returns one AuditRow for every Lidarr album that cannot be
-confirmed as present in Discogs.
+to MBZ Release Group MBIDs via the on-disk cache) against the auditable Lidarr
+albums (monitored, or unmonitored with files on disk), and returns one AuditRow
+for every Lidarr album that cannot be confirmed as present in Discogs.
 
 write_audit_csv() serialises those rows to a CSV file that can be opened in
 Excel, sorted by pct_owned to find deletion candidates, and then fed back to
-the future ``purge`` command (which will act on the ``action`` column).
+the ``purge`` command (which will act on the ``action`` column).
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ _CSV_FIELDS = [
     "artist_name",
     "album_title",
     "year",
+    "monitored",
     "tracks_owned",
     "total_tracks",
     "pct_owned",
@@ -79,7 +80,7 @@ def compute_audit(
     cache: MbzCache,
     lidarr_albums: list[dict[str, Any]],
 ) -> list[AuditRow]:
-    """Cross-reference Discogs-owned MBIDs against monitored Lidarr albums.
+    """Cross-reference Discogs-owned MBIDs against auditable Lidarr albums.
 
     For each Lidarr album:
     - If its ``foreignAlbumId`` is in the Discogs-owned set → silently omit it.
@@ -90,14 +91,14 @@ def compute_audit(
 
     All included rows default to ``action="delete"``.  The caller (or the user
     in a spreadsheet) can change individual rows to ``action="keep"`` before
-    passing the file to the future ``purge`` command.
+    passing the file to the ``purge`` command.
 
     Args:
         discogs_items: Vinyl records from the Discogs collection (already
             fetched; MBZ resolution must have been run beforehand so the cache
             is warm).
         cache: The MBZ lookup cache populated by prior resolve() calls.
-        lidarr_albums: Full album records from get_monitored_albums_with_stats().
+        lidarr_albums: Full album records from get_albums_for_audit().
 
     Returns:
         List of AuditRow, one per Lidarr album not confirmed in Discogs.
@@ -122,6 +123,7 @@ def compute_audit(
                 artist_name=str(artist.get("artistName", "")),
                 album_title=str(album.get("title", "")),
                 year=_extract_year(album),
+                monitored=bool(album.get("monitored")),
                 tracks_owned=tracks_owned,
                 total_tracks=total_tracks,
                 pct_owned=_pct_owned(tracks_owned, total_tracks),
@@ -154,6 +156,7 @@ def write_audit_csv(rows: list[AuditRow], path: Path) -> None:
                     "artist_name": row.artist_name,
                     "album_title": row.album_title,
                     "year": row.year if row.year is not None else "",
+                    "monitored": row.monitored,
                     "tracks_owned": row.tracks_owned,
                     "total_tracks": row.total_tracks,
                     "pct_owned": row.pct_owned,
