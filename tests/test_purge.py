@@ -15,9 +15,18 @@ from discogs_lidarr_sync.purge import apply_ghost_purge, apply_purge, compute_pu
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 _FULL_FIELDNAMES = [
-    "action", "artist_name", "album_title", "year", "tracks_owned",
-    "total_tracks", "pct_owned", "discogs_match", "album_mbid",
-    "artist_mbid", "lidarr_album_id", "lidarr_artist_id",
+    "action",
+    "artist_name",
+    "album_title",
+    "year",
+    "tracks_owned",
+    "total_tracks",
+    "pct_owned",
+    "discogs_match",
+    "album_mbid",
+    "artist_mbid",
+    "lidarr_album_id",
+    "lidarr_artist_id",
 ]
 
 
@@ -177,8 +186,10 @@ class TestApplyPurge:
     def test_calls_delete_album_for_each_row(self) -> None:
         client = _mock_client()
         client.get_album.return_value = []  # no monitored albums left → artist also deleted
-        rows = [_purge_row(lidarr_album_id=1, lidarr_artist_id=5),
-                _purge_row(lidarr_album_id=2, lidarr_artist_id=6)]
+        rows = [
+            _purge_row(lidarr_album_id=1, lidarr_artist_id=5),
+            _purge_row(lidarr_album_id=2, lidarr_artist_id=6),
+        ]
         report = apply_purge(rows, client, dry_run=False)
         assert report.albums_deleted == 2
 
@@ -211,8 +222,10 @@ class TestApplyPurge:
             None,  # artist (from touched by second album)
         ]
         client.get_album.return_value = []
-        rows = [_purge_row(lidarr_album_id=1, lidarr_artist_id=7),
-                _purge_row(lidarr_album_id=2, lidarr_artist_id=7)]
+        rows = [
+            _purge_row(lidarr_album_id=1, lidarr_artist_id=7),
+            _purge_row(lidarr_album_id=2, lidarr_artist_id=7),
+        ]
         report = apply_purge(rows, client, dry_run=False)
         assert report.errors == 1
         assert report.albums_deleted == 1
@@ -322,7 +335,7 @@ class TestApplyGhostPurge:
         # Pass 2 check: no auditable albums left
         client.get_album.side_effect = [
             [_ghost_album(artist_id=10)],  # get_ghost_albums
-            [],                            # get_auditable_album_count_for_artist
+            [],  # get_auditable_album_count_for_artist
         ]
         report = apply_ghost_purge(client, dry_run=False)
         assert report.artists_deleted == 1
@@ -332,7 +345,7 @@ class TestApplyGhostPurge:
         remaining = {"artist": {"id": 10}, "monitored": True, "statistics": {"trackFileCount": 0}}
         client.get_album.side_effect = [
             [_ghost_album(artist_id=10)],  # get_ghost_albums
-            [remaining],                   # get_auditable_album_count_for_artist
+            [remaining],  # get_auditable_album_count_for_artist
         ]
         report = apply_ghost_purge(client, dry_run=False)
         assert report.artists_deleted == 0
@@ -353,8 +366,8 @@ class TestApplyGhostPurge:
         ]
         client._delete.side_effect = [
             Exception("500 Internal Server Error"),
-            None,   # second album
-            None,   # artist 11
+            None,  # second album
+            None,  # artist 11
         ]
         report = apply_ghost_purge(client, dry_run=False)
         assert report.errors == 1
@@ -363,8 +376,7 @@ class TestApplyGhostPurge:
     def test_deduplicates_artist_checks(self) -> None:
         client = _mock_client()
         client.get_album.side_effect = [
-            [_ghost_album(album_id=1, artist_id=5),
-             _ghost_album(album_id=2, artist_id=5)],
+            [_ghost_album(album_id=1, artist_id=5), _ghost_album(album_id=2, artist_id=5)],
             [],  # auditable check — called once for artist 5
         ]
         report = apply_ghost_purge(client, dry_run=False)

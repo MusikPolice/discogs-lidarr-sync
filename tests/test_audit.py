@@ -234,9 +234,19 @@ class TestWriteAuditCsv:
             assert reader.fieldnames is not None
             assert "action" == reader.fieldnames[0], "action must be the first column"
             expected = {
-                "action", "artist_name", "album_title", "year", "monitored",
-                "tracks_owned", "total_tracks", "pct_owned", "discogs_match",
-                "album_mbid", "artist_mbid", "lidarr_album_id", "lidarr_artist_id",
+                "action",
+                "artist_name",
+                "album_title",
+                "year",
+                "monitored",
+                "tracks_owned",
+                "total_tracks",
+                "pct_owned",
+                "discogs_match",
+                "album_mbid",
+                "artist_mbid",
+                "lidarr_album_id",
+                "lidarr_artist_id",
             }
             assert set(reader.fieldnames) == expected
 

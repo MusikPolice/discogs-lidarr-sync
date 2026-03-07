@@ -205,8 +205,8 @@ class TestGetMonitoredAlbumsWithStats:
     def test_returns_only_monitored_albums(self) -> None:
         client = _mock_client()
         client.get_album.return_value = [
-            _monitored_album_entry("aaa"),   # monitored — included
-            _album_entry("bbb"),             # unmonitored — excluded
+            _monitored_album_entry("aaa"),  # monitored — included
+            _album_entry("bbb"),  # unmonitored — excluded
         ]
         result = get_monitored_albums_with_stats(client)
         assert len(result) == 1
@@ -253,7 +253,7 @@ class TestGetAlbumsForAudit:
     def test_mixed_returns_only_auditable(self) -> None:
         client = _mock_client()
         client.get_album.return_value = [
-            _monitored_album_entry("aaa"),          # monitored — included
+            _monitored_album_entry("aaa"),  # monitored — included
             _album_entry("bbb", track_file_count=1),  # unmonitored with files — included
             _album_entry("ccc", track_file_count=0),  # ghost entry — excluded
         ]
@@ -682,9 +682,9 @@ class TestGetMonitoredAlbumCountForArtist:
     def test_counts_only_monitored_albums(self) -> None:
         client = _mock_client()
         client.get_album.return_value = [
-            self._album(5, True),   # counted
-            self._album(5, True),   # counted
-            self._album(5, True),   # counted
+            self._album(5, True),  # counted
+            self._album(5, True),  # counted
+            self._album(5, True),  # counted
             self._album(5, False),  # unmonitored — excluded
             self._album(5, False),  # unmonitored — excluded
         ]
@@ -693,8 +693,8 @@ class TestGetMonitoredAlbumCountForArtist:
     def test_excludes_other_artists(self) -> None:
         client = _mock_client()
         client.get_album.return_value = [
-            self._album(5, True),   # artist 5 — counted
-            self._album(6, True),   # artist 6 — excluded
+            self._album(5, True),  # artist 5 — counted
+            self._album(6, True),  # artist 6 — excluded
         ]
         assert get_monitored_album_count_for_artist(client, 5) == 1
 
@@ -712,9 +712,7 @@ class TestGetMonitoredAlbumCountForArtist:
             Exception("database is locked"),
             [album],
         ]
-        result = get_monitored_album_count_for_artist(
-            client, 5, _max_retries=5, _base_delay=0.0
-        )
+        result = get_monitored_album_count_for_artist(client, 5, _max_retries=5, _base_delay=0.0)
         assert result == 1
         assert client.get_album.call_count == 3
 
@@ -723,9 +721,7 @@ class TestGetMonitoredAlbumCountForArtist:
         client = _mock_client()
         client.get_album.side_effect = Exception("database is locked")
         with pytest.raises(LidarrError, match="still locked"):
-            get_monitored_album_count_for_artist(
-                client, 5, _max_retries=3, _base_delay=0.0
-            )
+            get_monitored_album_count_for_artist(client, 5, _max_retries=3, _base_delay=0.0)
         assert client.get_album.call_count == 3
 
     def test_non_locked_error_raises_immediately(self) -> None:
@@ -733,9 +729,7 @@ class TestGetMonitoredAlbumCountForArtist:
         client = _mock_client()
         client.get_album.side_effect = Exception("500 Internal Server Error")
         with pytest.raises(LidarrError):
-            get_monitored_album_count_for_artist(
-                client, 5, _max_retries=5, _base_delay=0.0
-            )
+            get_monitored_album_count_for_artist(client, 5, _max_retries=5, _base_delay=0.0)
         assert client.get_album.call_count == 1
 
 
@@ -800,16 +794,12 @@ class TestGetAuditableAlbumCountForArtist:
 
     def test_counts_unmonitored_with_files(self) -> None:
         client = _mock_client()
-        client.get_album.return_value = [
-            self._album(5, monitored=False, track_file_count=2)
-        ]
+        client.get_album.return_value = [self._album(5, monitored=False, track_file_count=2)]
         assert get_auditable_album_count_for_artist(client, 5) == 1
 
     def test_excludes_ghost_albums(self) -> None:
         client = _mock_client()
-        client.get_album.return_value = [
-            self._album(5, monitored=False, track_file_count=0)
-        ]
+        client.get_album.return_value = [self._album(5, monitored=False, track_file_count=0)]
         assert get_auditable_album_count_for_artist(client, 5) == 0
 
     def test_excludes_other_artists(self) -> None:
@@ -826,8 +816,6 @@ class TestGetAuditableAlbumCountForArtist:
             Exception("database is locked"),
             [self._album(5, monitored=True)],
         ]
-        result = get_auditable_album_count_for_artist(
-            client, 5, _max_retries=5, _base_delay=0.0
-        )
+        result = get_auditable_album_count_for_artist(client, 5, _max_retries=5, _base_delay=0.0)
         assert result == 1
         assert client.get_album.call_count == 2

@@ -32,9 +32,7 @@ from discogs_lidarr_sync.lidarr import (
 )
 from discogs_lidarr_sync.models import GhostPurgeReport, PurgeReport, PurgeRow
 
-_REQUIRED_COLUMNS: frozenset[str] = frozenset(
-    {"action", "lidarr_album_id", "lidarr_artist_id"}
-)
+_REQUIRED_COLUMNS: frozenset[str] = frozenset({"action", "lidarr_album_id", "lidarr_artist_id"})
 
 
 def read_purge_csv(path: Path) -> list[PurgeRow]:
@@ -52,9 +50,7 @@ def read_purge_csv(path: Path) -> list[PurgeRow]:
         fieldnames = set(reader.fieldnames)
         missing = _REQUIRED_COLUMNS - fieldnames
         if missing:
-            raise ValueError(
-                f"CSV is missing required columns: {', '.join(sorted(missing))}"
-            )
+            raise ValueError(f"CSV is missing required columns: {', '.join(sorted(missing))}")
 
         rows: list[PurgeRow] = []
         for i, raw in enumerate(reader, start=2):  # row 1 is the header

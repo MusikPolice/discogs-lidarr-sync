@@ -392,9 +392,9 @@ def get_ghost_albums(client: LidarrAPI) -> list[dict[str, Any]]:
     """
     albums: list[dict[str, Any]] = client.get_album()
     return [
-        a for a in albums
-        if not a.get("monitored")
-        and (a.get("statistics") or {}).get("trackFileCount", 0) == 0
+        a
+        for a in albums
+        if not a.get("monitored") and (a.get("statistics") or {}).get("trackFileCount", 0) == 0
     ]
 
 
@@ -422,10 +422,7 @@ def get_auditable_album_count_for_artist(
                 1
                 for a in albums
                 if a.get("artist", {}).get("id") == lidarr_artist_id
-                and (
-                    a.get("monitored")
-                    or (a.get("statistics") or {}).get("trackFileCount", 0) > 0
-                )
+                and (a.get("monitored") or (a.get("statistics") or {}).get("trackFileCount", 0) > 0)
             )
         except Exception as exc:
             last_exc = exc
@@ -433,12 +430,9 @@ def get_auditable_album_count_for_artist(
                 time.sleep(delay)
                 delay = min(delay * 2, _POLL_MAX_DELAY)
                 continue
-            raise LidarrError(
-                f"Failed to get albums for artist {lidarr_artist_id}: {exc}"
-            ) from exc
+            raise LidarrError(f"Failed to get albums for artist {lidarr_artist_id}: {exc}") from exc
     raise LidarrError(
-        f"Lidarr database still locked after {_max_retries} retries "
-        f"for artist {lidarr_artist_id}"
+        f"Lidarr database still locked after {_max_retries} retries for artist {lidarr_artist_id}"
     ) from last_exc
 
 
@@ -486,8 +480,7 @@ def delete_album(
                 continue
             raise LidarrError(f"Failed to delete album {lidarr_id}: {exc}") from exc
     raise LidarrError(
-        f"Lidarr database still locked after {_max_retries} retries "
-        f"deleting album {lidarr_id}"
+        f"Lidarr database still locked after {_max_retries} retries deleting album {lidarr_id}"
     ) from last_exc
 
 
@@ -523,8 +516,7 @@ def delete_artist(
                 continue
             raise LidarrError(f"Failed to delete artist {lidarr_id}: {exc}") from exc
     raise LidarrError(
-        f"Lidarr database still locked after {_max_retries} retries "
-        f"deleting artist {lidarr_id}"
+        f"Lidarr database still locked after {_max_retries} retries deleting artist {lidarr_id}"
     ) from last_exc
 
 
@@ -562,10 +554,7 @@ def get_monitored_album_count_for_artist(
                 time.sleep(delay)
                 delay = min(delay * 2, _POLL_MAX_DELAY)
                 continue
-            raise LidarrError(
-                f"Failed to get albums for artist {lidarr_artist_id}: {exc}"
-            ) from exc
+            raise LidarrError(f"Failed to get albums for artist {lidarr_artist_id}: {exc}") from exc
     raise LidarrError(
-        f"Lidarr database still locked after {_max_retries} retries "
-        f"for artist {lidarr_artist_id}"
+        f"Lidarr database still locked after {_max_retries} retries for artist {lidarr_artist_id}"
     ) from last_exc

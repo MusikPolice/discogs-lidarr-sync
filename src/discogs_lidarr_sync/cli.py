@@ -492,9 +492,7 @@ def purge(input: Path, dry_run: bool, delete_files: bool, config: str, verbose: 
         # Skip the spinner so per-item log lines aren't suppressed.
         if dry_run:
             for row in to_delete:
-                _console.print(
-                    f"  [dim]would delete[/dim]  {row.artist_name} — {row.album_title}"
-                )
+                _console.print(f"  [dim]would delete[/dim]  {row.artist_name} — {row.album_title}")
         report = apply_purge(
             to_delete,
             client,
