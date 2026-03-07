@@ -35,11 +35,12 @@ from discogs_lidarr_sync.lidarr import (
     get_all_album_mbids,
     get_all_artist_mbids,
     get_discogs_album_coverage,
+    get_ghost_albums,
     get_monitored_album_mbids,
 )
 from discogs_lidarr_sync.mbz import MbzCache, resolve
 from discogs_lidarr_sync.models import RunReport, SyncAction
-from discogs_lidarr_sync.purge import apply_purge, compute_purge, read_purge_csv
+from discogs_lidarr_sync.purge import apply_ghost_purge, apply_purge, compute_purge, read_purge_csv
 from discogs_lidarr_sync.sync import apply_diff, compute_diff, write_report, write_unresolved
 
 _console = Console()
@@ -252,6 +253,7 @@ def status(config: str) -> None:
         t2 = progress.add_task("Reading Lidarr library…", total=None)
         artist_mbids = get_all_artist_mbids(client)
         album_mbids = get_all_album_mbids(client)
+        ghost_count = len(get_ghost_albums(client))
         progress.update(t2, total=1, completed=1)
 
     table = Table(title="Current Status", show_header=True)
@@ -260,6 +262,11 @@ def status(config: str) -> None:
     table.add_row("Discogs vinyl records", str(len(items)))
     table.add_row("Lidarr artists", str(len(artist_mbids)))
     table.add_row("Lidarr albums", str(len(album_mbids)))
+    table.add_row(
+        "  Ghost albums (clean-ghosts)",
+        str(ghost_count),
+        style="yellow" if ghost_count > 0 else "",
+    )
 
     _console.print()
     _console.print(table)
@@ -516,6 +523,96 @@ def purge(input: Path, dry_run: bool, delete_files: bool, config: str, verbose: 
     table.add_row("Albums to delete (from CSV)", str(report.to_delete))
     table.add_row("Albums skipped (keep)", str(report.skipped_keep))
     table.add_row("Albums already gone in Lidarr", str(report.already_gone))
+    table.add_row(
+        "Albums deleted",
+        str(report.albums_deleted),
+        style="green" if report.albums_deleted > 0 else "",
+    )
+    table.add_row(
+        "Artists deleted",
+        str(report.artists_deleted),
+        style="green" if report.artists_deleted > 0 else "",
+    )
+    table.add_row(
+        "Errors",
+        str(report.errors),
+        style="red" if report.errors > 0 else "",
+    )
+
+    _console.print()
+    _console.print(table)
+
+    if report.error_details:
+        _console.print()
+        for detail in report.error_details:
+            _console.print(f"  [red]Error:[/red] {detail}")
+
+
+@main.command("clean-ghosts")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show what would be deleted without making any changes.",
+)
+@click.option(
+    "--delete-files",
+    is_flag=True,
+    default=False,
+    help=(
+        "Also delete files from disk when removing albums and artists.  "
+        "Default: remove Lidarr monitoring entries only, leave files untouched."
+    ),
+)
+@click.option(
+    "--config",
+    default=".env",
+    show_default=True,
+    help="Path to .env config file.",
+)
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Print each album deleted.")
+def clean_ghosts(dry_run: bool, delete_files: bool, config: str, verbose: bool) -> None:
+    """Delete unmonitored albums with no files from Lidarr.
+
+    Ghost albums are catalog entries auto-indexed by Lidarr when an artist is
+    added with monitor="none".  They have never been monitored and have no
+    files on disk, so they can be removed without a review step.
+
+    Artists left with no remaining monitored or on-disk content are also
+    removed.
+    """
+    settings = _load_or_exit(config)
+    from discogs_lidarr_sync.config import Settings
+
+    assert isinstance(settings, Settings)
+
+    client = LidarrAPI(settings.lidarr_url, settings.lidarr_api_key)
+
+    try:
+        if verbose:
+            report = apply_ghost_purge(
+                client, dry_run=dry_run, delete_files=delete_files, log=_console.print
+            )
+        else:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=_console,
+                transient=True,
+            ) as p:
+                label = "Simulating ghost purge" if dry_run else "Cleaning ghosts"
+                p.add_task(f"{label}…", total=None)
+                report = apply_ghost_purge(client, dry_run=dry_run, delete_files=delete_files)
+    except Exception as exc:
+        _console.print(f"[red bold]Error:[/red bold] {exc}")
+        sys.exit(1)
+
+    title = "Clean Ghosts Summary (dry run)" if dry_run else "Clean Ghosts Summary"
+    table = Table(title=title, show_header=False)
+    table.add_column("", style="bold", min_width=35)
+    table.add_column("Count", justify="right", min_width=6)
+    table.add_row("Ghost albums found", str(report.ghosts_found))
+    table.add_row("Already gone", str(report.already_gone))
     table.add_row(
         "Albums deleted",
         str(report.albums_deleted),

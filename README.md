@@ -79,7 +79,7 @@ A colour-coded summary table is printed at the end of every run. A timestamped J
 uv run discogs-lidarr-sync status
 ```
 
-Fetches and displays the current Discogs vinyl count and Lidarr artist/album counts. No changes are made.
+Fetches and displays the current Discogs vinyl count and Lidarr artist/album counts, including a count of ghost albums (see [Ghost albums](#ghost-albums) below). No changes are made.
 
 ### `profiles` — find quality and metadata profile IDs
 
@@ -95,7 +95,9 @@ Prints a table of all quality profiles and metadata profiles configured in your 
 uv run discogs-lidarr-sync audit
 ```
 
-Compares every monitored album in Lidarr against your current Discogs vinyl collection and exports a CSV of albums that have no matching Discogs record. All rows default to `action=delete`. Open the CSV in a spreadsheet, change `action` to `keep` for any album you want to retain, then pass it to `purge`.
+Compares auditable Lidarr albums against your current Discogs vinyl collection and exports a CSV of albums that have no matching Discogs record. *Auditable* means: monitored, or unmonitored but with files on disk. Ghost albums (unmonitored, no files) are excluded — use `clean-ghosts` to remove those automatically.
+
+All rows default to `action=delete`. Open the CSV in a spreadsheet, change `action` to `keep` for any album you want to retain, then pass it to `purge`. The `monitored` column shows whether the album is currently monitored in Lidarr, which helps distinguish intentionally-kept unmonitored albums from stray imports.
 
 Options:
 
@@ -143,6 +145,25 @@ uv run discogs-lidarr-sync purge audit/audit_<timestamp>.csv --verbose
 
 ---
 
+### `clean-ghosts` — remove unmonitored albums with no files
+
+```bash
+uv run discogs-lidarr-sync clean-ghosts
+```
+
+Finds and removes every [ghost album](#ghost-albums) from Lidarr. Because ghost albums have never been monitored and hold no files, they can be deleted safely without a review step. Artists left with no remaining monitored or on-disk content are also removed.
+
+Options:
+
+| Flag | Description |
+|---|---|
+| `--dry-run` | Show what would be deleted without making any changes |
+| `--delete-files` | Also delete files from disk. Default: remove Lidarr entries only |
+| `--verbose` / `-v` | Print each album and artist as it is deleted |
+| `--config PATH` | Path to a custom `.env` file (default: `.env`) |
+
+---
+
 ### `clear-cache` — delete the MBZ cache
 
 ```bash
@@ -150,6 +171,20 @@ uv run discogs-lidarr-sync clear-cache
 ```
 
 Deletes `.cache/mbz_cache.json` (or the path set in `MBZ_CACHE_PATH`). You will be prompted for confirmation. The cache will be rebuilt from scratch on the next `sync` run.
+
+---
+
+## Ghost albums
+
+When this tool adds an artist to Lidarr it uses Lidarr's `monitor="none"` option, which means Lidarr immediately indexes the artist's *entire* MusicBrainz discography as unmonitored catalog entries. This is by design — it lets Lidarr know the artist exists without triggering a download of their whole back catalogue.
+
+The side effect is that your Lidarr library can accumulate hundreds of these **ghost albums**: unmonitored entries with no files on disk, for albums you never asked Lidarr to track. They don't affect downloads but they do inflate album counts and make the library harder to read.
+
+This tool handles them in two ways:
+
+- **`status`** shows a ghost count so you know how many are present.
+- **`clean-ghosts`** deletes them all in one pass, without requiring a CSV review step. It is safe to run repeatedly.
+- **`audit`** deliberately excludes ghost albums from its CSV output. Including them would bury real deletion candidates under hundreds of irrelevant rows.
 
 ---
 

@@ -380,6 +380,68 @@ def add_album(
         raise LidarrError(f"Failed to add album MBID {mbid!r}: {exc}") from exc
 
 
+# ── Ghost-purge helpers ───────────────────────────────────────────────────────
+
+
+def get_ghost_albums(client: LidarrAPI) -> list[dict[str, Any]]:
+    """Return all unmonitored albums that have no files on disk.
+
+    These are catalog entries auto-indexed by Lidarr when an artist is added
+    with monitor="none".  They are never monitored and have no files, so they
+    are safe to delete without user review.
+    """
+    albums: list[dict[str, Any]] = client.get_album()
+    return [
+        a for a in albums
+        if not a.get("monitored")
+        and (a.get("statistics") or {}).get("trackFileCount", 0) == 0
+    ]
+
+
+def get_auditable_album_count_for_artist(
+    client: LidarrAPI,
+    lidarr_artist_id: int,
+    *,
+    _max_retries: int = 5,
+    _base_delay: float = _POLL_BASE_DELAY,
+) -> int:
+    """Return the number of auditable albums for a given artist internal ID.
+
+    Auditable = monitored OR unmonitored with at least one file on disk.
+    Used after ghost album deletion to determine whether an artist has any
+    remaining content and should be kept.
+
+    Retries on transient "database is locked" errors with exponential backoff.
+    """
+    delay = _base_delay
+    last_exc: Exception | None = None
+    for _ in range(_max_retries):
+        try:
+            albums: list[dict[str, Any]] = client.get_album()
+            return sum(
+                1
+                for a in albums
+                if a.get("artist", {}).get("id") == lidarr_artist_id
+                and (
+                    a.get("monitored")
+                    or (a.get("statistics") or {}).get("trackFileCount", 0) > 0
+                )
+            )
+        except Exception as exc:
+            last_exc = exc
+            if "database is locked" in str(exc).lower():
+                time.sleep(delay)
+                delay = min(delay * 2, _POLL_MAX_DELAY)
+                continue
+            raise LidarrError(
+                f"Failed to get albums for artist {lidarr_artist_id}: {exc}"
+            ) from exc
+    raise LidarrError(
+        f"Lidarr database still locked after {_max_retries} retries "
+        f"for artist {lidarr_artist_id}"
+    ) from last_exc
+
+
 # ── Purge helpers ─────────────────────────────────────────────────────────────
 
 

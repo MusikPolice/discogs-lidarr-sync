@@ -106,6 +106,19 @@ class PurgeReport:
 
 
 @dataclass
+class GhostPurgeReport:
+    """Aggregate summary of a clean-ghosts run."""
+
+    dry_run: bool
+    ghosts_found: int  # unmonitored albums with no files discovered
+    already_gone: int  # 404 on delete — already removed
+    albums_deleted: int
+    artists_deleted: int
+    errors: int
+    error_details: list[str] = field(default_factory=list)
+
+
+@dataclass
 class RunReport:
     """Aggregate summary of a single sync run."""
 

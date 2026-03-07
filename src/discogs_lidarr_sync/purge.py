@@ -1,8 +1,14 @@
 """Purge command logic for discogs-lidarr-sync.
 
-Reads an audit CSV (produced by the ``audit`` command), then deletes the
-albums marked action=delete from Lidarr, followed by any artists that have
-no remaining monitored albums.
+Two purge modes:
+
+apply_purge()       — CSV-driven: reads an audit CSV, deletes albums marked
+                      action=delete, then removes artists with no remaining
+                      monitored albums.
+
+apply_ghost_purge() — Auto-discovery: finds all unmonitored albums with no
+                      files on disk and deletes them without requiring a CSV,
+                      then removes artists with no remaining auditable content.
 """
 
 from __future__ import annotations
@@ -11,6 +17,7 @@ import csv
 import warnings
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from pyarr import LidarrAPI
 
@@ -19,9 +26,11 @@ from discogs_lidarr_sync.lidarr import (
     LidarrNotFoundError,
     delete_album,
     delete_artist,
+    get_auditable_album_count_for_artist,
+    get_ghost_albums,
     get_monitored_album_count_for_artist,
 )
-from discogs_lidarr_sync.models import PurgeReport, PurgeRow
+from discogs_lidarr_sync.models import GhostPurgeReport, PurgeReport, PurgeRow
 
 _REQUIRED_COLUMNS: frozenset[str] = frozenset(
     {"action", "lidarr_album_id", "lidarr_artist_id"}
@@ -163,6 +172,94 @@ def apply_purge(
                 if log:
                     name = artist_names.get(artist_id, str(artist_id))
                     log(f"  [green]deleted artist[/green]  {name}")
+        except LidarrError as exc:
+            report.errors += 1
+            report.error_details.append(str(exc))
+
+    return report
+
+
+def apply_ghost_purge(
+    client: LidarrAPI,
+    dry_run: bool,
+    delete_files: bool = False,
+    log: Callable[[str], None] | None = None,
+) -> GhostPurgeReport:
+    """Delete ghost albums (unmonitored, no files) from Lidarr without a CSV.
+
+    Auto-discovers all ghost albums from the current Lidarr state and deletes
+    them.  Unlike apply_purge(), no audit CSV is required — every ghost album
+    is deleted unless --dry-run is set.
+
+    Pass 1: delete every unmonitored album with trackFileCount == 0.
+    Pass 2: for each artist touched by a deletion, check whether any auditable
+            albums remain (monitored OR unmonitored-with-files).  If none
+            remain, delete the artist.
+
+    delete_files is forwarded to both album and artist deletion calls.
+    In dry_run mode no API calls are made.
+    """
+    try:
+        ghost_albums = get_ghost_albums(client)
+    except Exception as exc:
+        raise LidarrError(f"Failed to fetch albums from Lidarr: {exc}") from exc
+
+    report = GhostPurgeReport(
+        dry_run=dry_run,
+        ghosts_found=len(ghost_albums),
+        already_gone=0,
+        albums_deleted=0,
+        artists_deleted=0,
+        errors=0,
+    )
+
+    if dry_run:
+        if log:
+            for album in ghost_albums:
+                artist_name = str((album.get("artist") or {}).get("artistName", ""))
+                album_title = str(album.get("title", ""))
+                log(f"  [dim]would delete ghost[/dim]  {artist_name} — {album_title}")
+        return report
+
+    # ── Pass 1: delete ghost albums ───────────────────────────────────────────
+    touched_artist_ids: set[int] = set()
+    artist_names: dict[int, str] = {}
+
+    for album in ghost_albums:
+        artist: dict[str, Any] = album.get("artist") or {}
+        artist_id = int(artist.get("id", 0))
+        artist_name = str(artist.get("artistName", ""))
+        album_title = str(album.get("title", ""))
+        album_id = int(album.get("id", 0))
+
+        artist_names[artist_id] = artist_name
+
+        try:
+            delete_album(client, album_id, delete_files=delete_files)
+            report.albums_deleted += 1
+            touched_artist_ids.add(artist_id)
+            if log:
+                log(f"  [green]deleted ghost[/green]    {artist_name} — {album_title}")
+        except LidarrNotFoundError:
+            report.already_gone += 1
+            if log:
+                log(f"  [dim]already gone[/dim]     {artist_name} — {album_title}")
+        except LidarrError as exc:
+            report.errors += 1
+            report.error_details.append(str(exc))
+            if log:
+                log(f"  [red]error[/red]            {artist_name} — {album_title}: {exc}")
+
+    # ── Pass 2: remove artists with no remaining auditable content ────────────
+    for artist_id in touched_artist_ids:
+        try:
+            remaining = get_auditable_album_count_for_artist(client, artist_id)
+            if remaining == 0:
+                delete_artist(client, artist_id, delete_files=delete_files)
+                report.artists_deleted += 1
+                if log:
+                    name = artist_names.get(artist_id, str(artist_id))
+                    log(f"  [green]deleted artist[/green]   {name}")
         except LidarrError as exc:
             report.errors += 1
             report.error_details.append(str(exc))

@@ -17,7 +17,9 @@ from discogs_lidarr_sync.lidarr import (
     get_albums_for_audit,
     get_all_album_mbids,
     get_all_artist_mbids,
+    get_auditable_album_count_for_artist,
     get_discogs_album_coverage,
+    get_ghost_albums,
     get_monitored_album_count_for_artist,
     get_monitored_album_mbids,
     get_monitored_albums_with_stats,
@@ -735,3 +737,97 @@ class TestGetMonitoredAlbumCountForArtist:
                 client, 5, _max_retries=5, _base_delay=0.0
             )
         assert client.get_album.call_count == 1
+
+
+# ── get_ghost_albums ──────────────────────────────────────────────────────────
+
+
+class TestGetGhostAlbums:
+    def _album(self, monitored: bool, track_file_count: int) -> dict:
+        return {
+            "foreignAlbumId": "x",
+            "monitored": monitored,
+            "statistics": {"trackFileCount": track_file_count},
+        }
+
+    def test_returns_unmonitored_with_no_files(self) -> None:
+        client = _mock_client()
+        ghost = self._album(monitored=False, track_file_count=0)
+        client.get_album.return_value = [ghost]
+        assert get_ghost_albums(client) == [ghost]
+
+    def test_excludes_monitored_albums(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [self._album(monitored=True, track_file_count=0)]
+        assert get_ghost_albums(client) == []
+
+    def test_excludes_unmonitored_with_files(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [self._album(monitored=False, track_file_count=2)]
+        assert get_ghost_albums(client) == []
+
+    def test_mixed_returns_only_ghosts(self) -> None:
+        client = _mock_client()
+        ghost = self._album(monitored=False, track_file_count=0)
+        client.get_album.return_value = [
+            ghost,
+            self._album(monitored=True, track_file_count=0),
+            self._album(monitored=False, track_file_count=3),
+        ]
+        assert get_ghost_albums(client) == [ghost]
+
+    def test_empty_library(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = []
+        assert get_ghost_albums(client) == []
+
+
+# ── get_auditable_album_count_for_artist ──────────────────────────────────────
+
+
+class TestGetAuditableAlbumCountForArtist:
+    def _album(self, artist_id: int, monitored: bool, track_file_count: int = 0) -> dict:
+        return {
+            "artist": {"id": artist_id},
+            "monitored": monitored,
+            "statistics": {"trackFileCount": track_file_count},
+        }
+
+    def test_counts_monitored_albums(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [self._album(5, monitored=True)]
+        assert get_auditable_album_count_for_artist(client, 5) == 1
+
+    def test_counts_unmonitored_with_files(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            self._album(5, monitored=False, track_file_count=2)
+        ]
+        assert get_auditable_album_count_for_artist(client, 5) == 1
+
+    def test_excludes_ghost_albums(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            self._album(5, monitored=False, track_file_count=0)
+        ]
+        assert get_auditable_album_count_for_artist(client, 5) == 0
+
+    def test_excludes_other_artists(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            self._album(5, monitored=True),
+            self._album(6, monitored=True),
+        ]
+        assert get_auditable_album_count_for_artist(client, 5) == 1
+
+    def test_retries_on_database_locked(self) -> None:
+        client = _mock_client()
+        client.get_album.side_effect = [
+            Exception("database is locked"),
+            [self._album(5, monitored=True)],
+        ]
+        result = get_auditable_album_count_for_artist(
+            client, 5, _max_retries=5, _base_delay=0.0
+        )
+        assert result == 1
+        assert client.get_album.call_count == 2

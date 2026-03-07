@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from discogs_lidarr_sync.models import PurgeRow
-from discogs_lidarr_sync.purge import apply_purge, compute_purge, read_purge_csv
+from discogs_lidarr_sync.purge import apply_ghost_purge, apply_purge, compute_purge, read_purge_csv
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -275,3 +275,109 @@ class TestApplyPurge:
         apply_purge(rows, client, dry_run=False)
         album_call = client._delete.call_args_list[0]
         assert album_call.kwargs["params"]["deleteFiles"] is False
+
+
+# ── apply_ghost_purge ─────────────────────────────────────────────────────────
+
+
+def _ghost_album(
+    album_id: int = 1,
+    artist_id: int = 10,
+    artist_name: str = "Ben Folds Five",
+    title: str = "Whatever and Ever Amen",
+) -> dict:
+    return {
+        "id": album_id,
+        "title": title,
+        "foreignAlbumId": f"mbid-{album_id}",
+        "monitored": False,
+        "artist": {"id": artist_id, "artistName": artist_name},
+        "statistics": {"trackFileCount": 0},
+    }
+
+
+class TestApplyGhostPurge:
+    def test_dry_run_makes_no_api_calls(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [_ghost_album()]
+        report = apply_ghost_purge(client, dry_run=True)
+        client._delete.assert_not_called()
+        assert report.dry_run is True
+        assert report.ghosts_found == 1
+        assert report.albums_deleted == 0
+
+    def test_deletes_all_ghost_albums(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [
+            _ghost_album(album_id=1),
+            _ghost_album(album_id=2),
+        ]
+        report = apply_ghost_purge(client, dry_run=False)
+        assert report.albums_deleted == 2
+        assert report.ghosts_found == 2
+
+    def test_deletes_artist_when_no_auditable_content_remains(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [_ghost_album(artist_id=10)]
+        # Pass 2 check: no auditable albums left
+        client.get_album.side_effect = [
+            [_ghost_album(artist_id=10)],  # get_ghost_albums
+            [],                            # get_auditable_album_count_for_artist
+        ]
+        report = apply_ghost_purge(client, dry_run=False)
+        assert report.artists_deleted == 1
+
+    def test_keeps_artist_with_remaining_auditable_content(self) -> None:
+        client = _mock_client()
+        remaining = {"artist": {"id": 10}, "monitored": True, "statistics": {"trackFileCount": 0}}
+        client.get_album.side_effect = [
+            [_ghost_album(artist_id=10)],  # get_ghost_albums
+            [remaining],                   # get_auditable_album_count_for_artist
+        ]
+        report = apply_ghost_purge(client, dry_run=False)
+        assert report.artists_deleted == 0
+
+    def test_already_gone_counted_not_errored(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [_ghost_album()]
+        client._delete.side_effect = Exception("404 Not Found")
+        report = apply_ghost_purge(client, dry_run=False)
+        assert report.already_gone == 1
+        assert report.errors == 0
+
+    def test_delete_error_recorded_without_aborting(self) -> None:
+        client = _mock_client()
+        client.get_album.side_effect = [
+            [_ghost_album(album_id=1, artist_id=10), _ghost_album(album_id=2, artist_id=11)],
+            [],  # auditable count for artist 11 after its album deleted
+        ]
+        client._delete.side_effect = [
+            Exception("500 Internal Server Error"),
+            None,   # second album
+            None,   # artist 11
+        ]
+        report = apply_ghost_purge(client, dry_run=False)
+        assert report.errors == 1
+        assert report.albums_deleted == 1
+
+    def test_deduplicates_artist_checks(self) -> None:
+        client = _mock_client()
+        client.get_album.side_effect = [
+            [_ghost_album(album_id=1, artist_id=5),
+             _ghost_album(album_id=2, artist_id=5)],
+            [],  # auditable check — called once for artist 5
+        ]
+        report = apply_ghost_purge(client, dry_run=False)
+        assert report.artists_deleted == 1
+        assert client.get_album.call_count == 2  # once for ghosts, once for artist check
+
+    def test_delete_files_forwarded(self) -> None:
+        client = _mock_client()
+        client.get_album.return_value = [_ghost_album(artist_id=10)]
+        client.get_album.side_effect = [
+            [_ghost_album(artist_id=10)],
+            [],
+        ]
+        apply_ghost_purge(client, dry_run=False, delete_files=True)
+        album_call = client._delete.call_args_list[0]
+        assert album_call.kwargs["params"]["deleteFiles"] is True
