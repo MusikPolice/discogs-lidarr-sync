@@ -590,6 +590,31 @@ class TestDeleteAlbum:
     def test_lidarr_not_found_is_subclass_of_lidarr_error(self) -> None:
         assert issubclass(LidarrNotFoundError, LidarrError)
 
+    def test_retries_on_database_locked(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = [
+            Exception("database is locked"),
+            Exception("database is locked"),
+            None,
+        ]
+        delete_album(client, 42, _max_retries=5, _base_delay=0.0)
+        assert client._delete.call_count == 3
+
+    def test_raises_after_max_retries_on_locked(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = Exception("database is locked")
+        with pytest.raises(LidarrError, match="still locked"):
+            delete_album(client, 42, _max_retries=3, _base_delay=0.0)
+        assert client._delete.call_count == 3
+
+    def test_404_not_retried(self) -> None:
+        """404 should raise immediately, not consume retry budget."""
+        client = _mock_client()
+        client._delete.side_effect = Exception("404 Not Found")
+        with pytest.raises(LidarrNotFoundError):
+            delete_album(client, 42, _max_retries=5, _base_delay=0.0)
+        assert client._delete.call_count == 1
+
 
 # ── delete_artist ──────────────────────────────────────────────────────────────
 
@@ -620,6 +645,29 @@ class TestDeleteArtist:
         client._delete.side_effect = Exception("500 Internal Server Error")
         with pytest.raises(LidarrError):
             delete_artist(client, 7)
+
+    def test_retries_on_database_locked(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = [
+            Exception("database is locked"),
+            None,
+        ]
+        delete_artist(client, 7, _max_retries=5, _base_delay=0.0)
+        assert client._delete.call_count == 2
+
+    def test_raises_after_max_retries_on_locked(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = Exception("database is locked")
+        with pytest.raises(LidarrError, match="still locked"):
+            delete_artist(client, 7, _max_retries=3, _base_delay=0.0)
+        assert client._delete.call_count == 3
+
+    def test_404_not_retried(self) -> None:
+        client = _mock_client()
+        client._delete.side_effect = Exception("404 Not Found")
+        with pytest.raises(LidarrNotFoundError):
+            delete_artist(client, 7, _max_retries=5, _base_delay=0.0)
+        assert client._delete.call_count == 1
 
 
 # ── get_monitored_album_count_for_artist ──────────────────────────────────────
@@ -652,3 +700,38 @@ class TestGetMonitoredAlbumCountForArtist:
         client = _mock_client()
         client.get_album.return_value = []
         assert get_monitored_album_count_for_artist(client, 5) == 0
+
+    def test_retries_on_database_locked(self) -> None:
+        """Transient 'database is locked' errors are retried."""
+        client = _mock_client()
+        album = self._album(5, True)
+        client.get_album.side_effect = [
+            Exception("Internal Server Error: database is locked\ndatabase is locked"),
+            Exception("database is locked"),
+            [album],
+        ]
+        result = get_monitored_album_count_for_artist(
+            client, 5, _max_retries=5, _base_delay=0.0
+        )
+        assert result == 1
+        assert client.get_album.call_count == 3
+
+    def test_raises_lidarr_error_after_max_retries(self) -> None:
+        """Exhausting retries on a locked database raises LidarrError."""
+        client = _mock_client()
+        client.get_album.side_effect = Exception("database is locked")
+        with pytest.raises(LidarrError, match="still locked"):
+            get_monitored_album_count_for_artist(
+                client, 5, _max_retries=3, _base_delay=0.0
+            )
+        assert client.get_album.call_count == 3
+
+    def test_non_locked_error_raises_immediately(self) -> None:
+        """Non-transient errors are not retried — they raise LidarrError immediately."""
+        client = _mock_client()
+        client.get_album.side_effect = Exception("500 Internal Server Error")
+        with pytest.raises(LidarrError):
+            get_monitored_album_count_for_artist(
+                client, 5, _max_retries=5, _base_delay=0.0
+            )
+        assert client.get_album.call_count == 1

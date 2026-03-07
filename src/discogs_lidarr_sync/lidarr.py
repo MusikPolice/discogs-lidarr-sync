@@ -393,53 +393,117 @@ def delete_album(
     client: LidarrAPI,
     lidarr_id: int,
     delete_files: bool = False,
+    *,
+    _max_retries: int = 5,
+    _base_delay: float = _POLL_BASE_DELAY,
 ) -> None:
     """Delete an album from Lidarr by its internal ID.
 
     delete_files=True also removes associated files from disk.
     Raises LidarrNotFoundError when the album does not exist (HTTP 404) so
     callers can distinguish "already gone" from genuine failures.
+    Retries on transient "database is locked" errors (background jobs
+    triggered by prior deletions can briefly hold a SQLite write lock).
     Raises LidarrError on other unexpected API failures.
     """
-    try:
-        client._delete(f"album/{lidarr_id}", client.ver_uri, params={"deleteFiles": delete_files})
-    except Exception as exc:
-        if _is_not_found(exc):
-            raise LidarrNotFoundError(f"Album {lidarr_id} not found in Lidarr") from exc
-        raise LidarrError(f"Failed to delete album {lidarr_id}: {exc}") from exc
+    delay = _base_delay
+    last_exc: Exception | None = None
+    for _ in range(_max_retries):
+        try:
+            client._delete(
+                f"album/{lidarr_id}", client.ver_uri, params={"deleteFiles": delete_files}
+            )
+            return
+        except Exception as exc:
+            last_exc = exc
+            if _is_not_found(exc):
+                raise LidarrNotFoundError(f"Album {lidarr_id} not found in Lidarr") from exc
+            if "database is locked" in str(exc).lower():
+                time.sleep(delay)
+                delay = min(delay * 2, _POLL_MAX_DELAY)
+                continue
+            raise LidarrError(f"Failed to delete album {lidarr_id}: {exc}") from exc
+    raise LidarrError(
+        f"Lidarr database still locked after {_max_retries} retries "
+        f"deleting album {lidarr_id}"
+    ) from last_exc
 
 
 def delete_artist(
     client: LidarrAPI,
     lidarr_id: int,
     delete_files: bool = False,
+    *,
+    _max_retries: int = 5,
+    _base_delay: float = _POLL_BASE_DELAY,
 ) -> None:
     """Delete an artist from Lidarr by its internal ID.
 
     delete_files=True also removes all associated files from disk.
+    Retries on transient "database is locked" errors.
     Raises LidarrNotFoundError on HTTP 404, LidarrError on other failures.
     """
-    try:
-        client._delete(f"artist/{lidarr_id}", client.ver_uri, params={"deleteFiles": delete_files})
-    except Exception as exc:
-        if _is_not_found(exc):
-            raise LidarrNotFoundError(f"Artist {lidarr_id} not found in Lidarr") from exc
-        raise LidarrError(f"Failed to delete artist {lidarr_id}: {exc}") from exc
+    delay = _base_delay
+    last_exc: Exception | None = None
+    for _ in range(_max_retries):
+        try:
+            client._delete(
+                f"artist/{lidarr_id}", client.ver_uri, params={"deleteFiles": delete_files}
+            )
+            return
+        except Exception as exc:
+            last_exc = exc
+            if _is_not_found(exc):
+                raise LidarrNotFoundError(f"Artist {lidarr_id} not found in Lidarr") from exc
+            if "database is locked" in str(exc).lower():
+                time.sleep(delay)
+                delay = min(delay * 2, _POLL_MAX_DELAY)
+                continue
+            raise LidarrError(f"Failed to delete artist {lidarr_id}: {exc}") from exc
+    raise LidarrError(
+        f"Lidarr database still locked after {_max_retries} retries "
+        f"deleting artist {lidarr_id}"
+    ) from last_exc
 
 
 def get_monitored_album_count_for_artist(
     client: LidarrAPI,
     lidarr_artist_id: int,
+    *,
+    _max_retries: int = 5,
+    _base_delay: float = _POLL_BASE_DELAY,
 ) -> int:
     """Return the number of monitored albums for a given artist internal ID.
 
     Used after album deletion to decide whether to also delete the artist.
     Unmonitored albums (auto-indexed by Lidarr when the artist was added)
     are not counted.
+
+    Retries up to *_max_retries* times when Lidarr's SQLite database is
+    temporarily locked (a transient condition that can occur immediately
+    after bulk album deletions trigger background jobs in Lidarr).
+    All other API failures are wrapped as LidarrError.
     """
-    albums: list[dict[str, Any]] = client.get_album()
-    return sum(
-        1
-        for a in albums
-        if a.get("artist", {}).get("id") == lidarr_artist_id and a.get("monitored")
-    )
+    delay = _base_delay
+    last_exc: Exception | None = None
+    for _ in range(_max_retries):
+        try:
+            albums: list[dict[str, Any]] = client.get_album()
+            return sum(
+                1
+                for a in albums
+                if a.get("artist", {}).get("id") == lidarr_artist_id and a.get("monitored")
+            )
+        except Exception as exc:
+            last_exc = exc
+            if "database is locked" in str(exc).lower():
+                time.sleep(delay)
+                delay = min(delay * 2, _POLL_MAX_DELAY)
+                continue
+            raise LidarrError(
+                f"Failed to get albums for artist {lidarr_artist_id}: {exc}"
+            ) from exc
+    raise LidarrError(
+        f"Lidarr database still locked after {_max_retries} retries "
+        f"for artist {lidarr_artist_id}"
+    ) from last_exc
