@@ -24,7 +24,7 @@ packages = ["src/discogs_lidarr_sync"]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0",
+    "pytest>=9.0.3",
     "pytest-cov>=6.0",
     "pytest-recording>=0.13.0",
     "responses>=0.25.0",
