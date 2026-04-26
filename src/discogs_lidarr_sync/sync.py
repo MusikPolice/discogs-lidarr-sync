@@ -174,7 +174,7 @@ def write_report(report: RunReport, output_dir: Path) -> None:
             for r in report.results
         ],
     }
-    with open(output_dir / filename, "w") as f:
+    with open(output_dir / filename, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
@@ -183,7 +183,7 @@ def write_unresolved(unresolved: list[SyncResult], path: Path) -> None:
     if not unresolved:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a") as f:
+    with open(path, "a", encoding="utf-8") as f:
         for sr in unresolved:
             parts = [
                 str(sr.item.discogs_release_id),

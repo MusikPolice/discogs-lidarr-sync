@@ -118,6 +118,44 @@ class GhostPurgeReport:
     error_details: list[str] = field(default_factory=list)
 
 
+class SpotifyAction(StrEnum):
+    """The outcome action recorded for a single DiscogsItem during a Spotify sync run."""
+
+    ADDED = "added"
+    ALREADY_IN = "already_in"
+    NOT_FOUND = "not_found"
+    ERROR = "error"
+
+
+@dataclass
+class SpotifyMatchResult:
+    """Outcome of processing a single DiscogsItem during a Spotify sync."""
+
+    item: DiscogsItem
+    action: SpotifyAction
+    spotify_album_id: str | None
+    track_uris: list[str]
+    tracks_added: int
+    error: str | None = None
+
+
+@dataclass
+class SpotifyReport:
+    """Aggregate summary of a single Spotify sync run."""
+
+    run_at: datetime
+    dry_run: bool
+    playlist_id: str
+    playlist_name: str
+    total_vinyl: int
+    albums_matched: int
+    albums_not_found: int
+    albums_already_complete: int
+    tracks_added: int
+    errors: int
+    results: list[SpotifyMatchResult] = field(default_factory=list)
+
+
 @dataclass
 class RunReport:
     """Aggregate summary of a single sync run."""

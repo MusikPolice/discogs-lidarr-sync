@@ -81,6 +81,71 @@ def load_lidarr_settings(env_file: str = ".env") -> LidarrSettings:
     return LidarrSettings(lidarr_url=lidarr_url, lidarr_api_key=lidarr_api_key)
 
 
+@dataclass
+class SpotifySettings:
+    """Settings needed to run the Spotify sync command."""
+
+    spotify_client_id: str
+    spotify_client_secret: str
+    spotify_redirect_uri: str
+    spotify_playlist_name: str = "Vinyl Collection"
+    spotify_token_cache_path: str = ".cache/spotify_token"
+    spotify_search_cache_path: str = ".cache/spotify_cache.json"
+    spotify_playlist_id: str = ""
+    discogs_token: str = ""
+    discogs_username: str = ""
+
+
+def load_spotify_settings(env_file: str = ".env") -> SpotifySettings:
+    """Load settings needed for the spotify-sync command.
+
+    Requires SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, DISCOGS_TOKEN,
+    and DISCOGS_USERNAME.  All other values have defaults.
+
+    Raises:
+        ConfigError: if any required variable is missing/empty.
+    """
+    load_dotenv(env_file)
+
+    missing: list[str] = []
+
+    def _require(key: str) -> str:
+        val = os.getenv(key, "").strip()
+        if not val:
+            missing.append(key)
+        return val
+
+    spotify_client_id = _require("SPOTIFY_CLIENT_ID")
+    spotify_client_secret = _require("SPOTIFY_CLIENT_SECRET")
+    discogs_token = _require("DISCOGS_TOKEN")
+    discogs_username = _require("DISCOGS_USERNAME")
+
+    if missing:
+        names = ", ".join(missing)
+        raise ConfigError(
+            f"Missing required environment variable(s): {names}\n"
+            f"Copy .env.example to .env and fill in the missing values."
+        )
+
+    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback").strip()
+    playlist_name = os.getenv("SPOTIFY_PLAYLIST_NAME", "Vinyl Collection").strip()
+    token_cache = os.getenv("SPOTIFY_TOKEN_CACHE_PATH", ".cache/spotify_token").strip()
+    search_cache = os.getenv("SPOTIFY_SEARCH_CACHE_PATH", ".cache/spotify_cache.json").strip()
+    playlist_id = os.getenv("SPOTIFY_PLAYLIST_ID", "").strip()
+
+    return SpotifySettings(
+        spotify_client_id=spotify_client_id,
+        spotify_client_secret=spotify_client_secret,
+        spotify_redirect_uri=redirect_uri,
+        spotify_playlist_name=playlist_name,
+        spotify_token_cache_path=token_cache,
+        spotify_search_cache_path=search_cache,
+        spotify_playlist_id=playlist_id,
+        discogs_token=discogs_token,
+        discogs_username=discogs_username,
+    )
+
+
 def load_settings(env_file: str = ".env") -> Settings:
     """Load and validate settings from environment variables / .env file.
 

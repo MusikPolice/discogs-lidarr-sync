@@ -69,7 +69,7 @@ class MbzCache:
         if not os.path.exists(self.cache_path):
             self._data = {}
             return
-        with open(self.cache_path) as f:
+        with open(self.cache_path, encoding="utf-8") as f:
             self._data = json.load(f)
 
     def save(self) -> None:
@@ -77,7 +77,7 @@ class MbzCache:
         parent = os.path.dirname(self.cache_path)
         if parent:
             os.makedirs(parent, exist_ok=True)
-        with open(self.cache_path, "w") as f:
+        with open(self.cache_path, "w", encoding="utf-8") as f:
             json.dump(self._data, f, indent=2)
 
 

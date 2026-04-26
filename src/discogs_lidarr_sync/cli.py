@@ -28,7 +28,12 @@ from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn
 from rich.table import Table
 
 from discogs_lidarr_sync.audit import compute_audit, write_audit_csv
-from discogs_lidarr_sync.config import ConfigError, load_lidarr_settings, load_settings
+from discogs_lidarr_sync.config import (
+    ConfigError,
+    load_lidarr_settings,
+    load_settings,
+    load_spotify_settings,
+)
 from discogs_lidarr_sync.discogs import fetch_collection
 from discogs_lidarr_sync.lidarr import (
     get_albums_for_audit,
@@ -39,7 +44,7 @@ from discogs_lidarr_sync.lidarr import (
     get_monitored_album_mbids,
 )
 from discogs_lidarr_sync.mbz import MbzCache, resolve
-from discogs_lidarr_sync.models import RunReport, SyncAction
+from discogs_lidarr_sync.models import RunReport, SpotifyAction, SyncAction
 from discogs_lidarr_sync.purge import apply_ghost_purge, apply_purge, compute_purge, read_purge_csv
 from discogs_lidarr_sync.sync import apply_diff, compute_diff, write_report, write_unresolved
 
@@ -634,6 +639,233 @@ def clean_ghosts(dry_run: bool, delete_files: bool, config: str, verbose: bool) 
         _console.print()
         for detail in report.error_details:
             _console.print(f"  [red]Error:[/red] {detail}")
+
+
+@main.command("spotify-sync")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Search Spotify and show what would be added without modifying the playlist.",
+)
+@click.option(
+    "--rebuild",
+    is_flag=True,
+    default=False,
+    help="Clear the playlist and rebuild it from scratch instead of adding incrementally.",
+)
+@click.option(
+    "--playlist-name",
+    default=None,
+    help="Spotify playlist name to create/update. Overrides SPOTIFY_PLAYLIST_NAME in .env.",
+)
+@click.option(
+    "--config",
+    default=".env",
+    show_default=True,
+    help="Path to .env config file.",
+)
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Show each album processed.")
+def spotify_sync(
+    dry_run: bool, rebuild: bool, playlist_name: str | None, config: str, verbose: bool
+) -> None:
+    """Build or update a Spotify playlist from your Discogs vinyl collection.
+
+    On first run this opens a browser tab for Spotify login.  Subsequent runs
+    use a cached token and run non-interactively.
+
+    The playlist is additive-only: tracks are never removed.  Use --rebuild to
+    wipe the playlist and start fresh from the current Discogs collection.
+    """
+    from discogs_lidarr_sync.spotify import (
+        SpotifyCache,
+        build_client,
+        get_or_create_playlist,
+        sync_collection_to_playlist,
+    )
+
+    try:
+        settings = load_spotify_settings(env_file=config)
+    except ConfigError as exc:
+        _console.print(f"[red bold]Configuration error:[/red bold] {exc}")
+        sys.exit(1)
+
+    if playlist_name:
+        settings.spotify_playlist_name = playlist_name
+
+    # ── Step 1: Fetch Discogs collection ──────────────────────────────────────
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=_console,
+        transient=True,
+    ) as progress:
+        t1 = progress.add_task("Fetching Discogs collection…", total=None)
+        try:
+            items = fetch_collection(settings.discogs_username, settings.discogs_token)
+        except Exception as exc:
+            _console.print(f"[red]Failed to fetch Discogs collection:[/red] {exc}")
+            sys.exit(1)
+        progress.update(t1, total=1, completed=1)
+
+    _console.print(
+        f"[green]✓[/green] Fetched [bold]{len(items)}[/bold] vinyl records from Discogs"
+    )
+
+    # ── Step 2: Authenticate with Spotify ─────────────────────────────────────
+    # build_client() may open a browser tab and print its own output; our
+    # success message is printed afterwards so it lands at the end.
+    _console.print()
+    try:
+        sp = build_client(settings)
+        user_info: dict[str, object] = sp.current_user() or {}
+    except Exception as exc:
+        _console.print(f"[red]Spotify authentication failed:[/red] {exc}")
+        sys.exit(1)
+    display_name = str(user_info.get("display_name") or user_info.get("id") or "?")
+    _console.print(f"[green]✓[/green] Connected to Spotify as [bold]{display_name}[/bold]")
+
+    # ── Step 3: Resolve the target playlist ───────────────────────────────────
+    if dry_run:
+        playlist_id = "(dry-run)"
+    elif settings.spotify_playlist_id:
+        playlist_id = settings.spotify_playlist_id
+        _console.print(
+            f"Using playlist ID from config: [bold]{playlist_id}[/bold]"
+        )
+    else:
+        try:
+            playlist_id = get_or_create_playlist(sp, settings.spotify_playlist_name)
+        except Exception as exc:
+            _console.print(f"[red]Failed to access Spotify playlist:[/red] {exc}")
+            if "403" in str(exc):
+                _console.print(
+                    "\n[yellow]Spotify's API restricts playlist creation for apps in "
+                    "development mode.[/yellow]\n"
+                    "Workaround:\n"
+                    f'  1. Open Spotify and create a playlist named '
+                    f'[bold]"{settings.spotify_playlist_name}"[/bold]\n'
+                    "  2. Open the playlist → ··· → Share → Copy link to playlist\n"
+                    "     The URL ends with the playlist ID, e.g.:\n"
+                    "     https://open.spotify.com/playlist/[bold]3cEYpjA9oz9GiPac4AsH4n[/bold]\n"
+                    "  3. Add [bold]SPOTIFY_PLAYLIST_ID=<id>[/bold] to your .env file\n"
+                    "  4. Re-run spotify-sync"
+                )
+            sys.exit(1)
+
+    # ── Step 4: Load cache and sync ───────────────────────────────────────────
+    cache = SpotifyCache(settings.spotify_search_cache_path)
+    cache.load()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        console=_console,
+    ) as progress:
+        t2 = progress.add_task("Searching Spotify…", total=len(items))
+
+        def _on_item_done(_item: object) -> None:
+            progress.advance(t2)
+
+        try:
+            results = sync_collection_to_playlist(
+                sp=sp,
+                items=items,
+                playlist_id=playlist_id,
+                cache=cache,
+                dry_run=dry_run,
+                rebuild=rebuild,
+                progress_callback=_on_item_done,
+            )
+        except Exception as exc:
+            _console.print(f"[red]Spotify sync failed:[/red] {exc}")
+            sys.exit(1)
+
+        progress.update(t2, description="[green]✓[/green] Spotify search complete")
+
+    cache.save()
+
+    # ── Step 5: Log unresolved items ──────────────────────────────────────────
+    not_found = [r for r in results if r.action == SpotifyAction.NOT_FOUND]
+    if not_found:
+        unresolved_path = Path("unresolved.log")
+        unresolved_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(unresolved_path, "a", encoding="utf-8") as f:
+            for r in not_found:
+                f.write(
+                    f"[spotify]\t{r.item.discogs_release_id}\t"
+                    f"{r.item.artist_name}\t{r.item.album_title}\n"
+                )
+
+    if verbose:
+        for r in results:
+            action_style = {
+                SpotifyAction.ADDED: "[green]added[/green]",
+                SpotifyAction.ALREADY_IN: "[dim]already in[/dim]",
+                SpotifyAction.NOT_FOUND: "[yellow]not found[/yellow]",
+                SpotifyAction.ERROR: "[red]error[/red]",
+            }[r.action]
+            detail = f" ({r.tracks_added} tracks)" if r.action == SpotifyAction.ADDED else ""
+            error_str = f"  [red]{r.error}[/red]" if r.error else ""
+            _console.print(
+                f"  {action_style}  {r.item.artist_name} — {r.item.album_title}"
+                f"{detail}{error_str}"
+            )
+
+    # ── Step 6: Summary table ─────────────────────────────────────────────────
+    albums_matched = sum(
+        1 for r in results if r.action in (SpotifyAction.ADDED, SpotifyAction.ALREADY_IN)
+    )
+    albums_not_found = sum(1 for r in results if r.action == SpotifyAction.NOT_FOUND)
+    albums_already_complete = sum(1 for r in results if r.action == SpotifyAction.ALREADY_IN)
+    tracks_added = sum(r.tracks_added for r in results)
+    errors = sum(1 for r in results if r.action == SpotifyAction.ERROR)
+
+    title = "Spotify Sync Summary" + (" [dim](dry run)[/dim]" if dry_run else "")
+    table = Table(title=title, show_header=False)
+    table.add_column("", style="bold", min_width=35)
+    table.add_column("Count", justify="right", min_width=6)
+    table.add_row(
+        "Albums matched on Spotify",
+        str(albums_matched),
+        style="green" if albums_matched > 0 else "",
+    )
+    table.add_row(
+        "  Already complete (no new tracks)",
+        str(albums_already_complete),
+        style="dim",
+    )
+    table.add_row(
+        "Albums not found on Spotify",
+        str(albums_not_found),
+        style="yellow" if albums_not_found > 0 else "",
+    )
+    table.add_row(
+        "Errors",
+        str(errors),
+        style="red" if errors > 0 else "",
+    )
+    table.add_section()
+    table.add_row("Total vinyl records", str(len(items)))
+    table.add_section()
+    table.add_row(
+        "Tracks added to playlist",
+        str(tracks_added),
+        style="green" if tracks_added > 0 else "",
+    )
+    if not dry_run:
+        table.add_row("Playlist", settings.spotify_playlist_name)
+
+    _console.print()
+    _console.print(table)
+
+    if albums_not_found > 0:
+        _console.print(
+            f"\n[dim]{albums_not_found} album(s) not found on Spotify — "
+            f"logged to unresolved.log[/dim]"
+        )
 
 
 @main.command("clear-cache")
