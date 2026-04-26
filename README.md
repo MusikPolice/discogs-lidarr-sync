@@ -52,6 +52,12 @@ cp .env.example .env
 | `LIDARR_QUALITY_PROFILE_ID` | Integer ID of the quality profile to use — run `discogs-lidarr-sync profiles` to list them |
 | `LIDARR_METADATA_PROFILE_ID` | Integer ID of the metadata profile to use — run `discogs-lidarr-sync profiles` to list them |
 | `MBZ_CACHE_PATH` | *(optional)* Path to the MBZ lookup cache. Default: `.cache/mbz_cache.json` |
+| `SPOTIFY_CLIENT_ID` | Client ID from your [Spotify developer app](https://developer.spotify.com/dashboard) |
+| `SPOTIFY_CLIENT_SECRET` | Client secret from your Spotify developer app |
+| `SPOTIFY_REDIRECT_URI` | Must be set to `http://127.0.0.1:8888/callback` — add this exact URI in the Spotify app dashboard (note: `127.0.0.1`, not `localhost`) |
+| `SPOTIFY_PLAYLIST_ID` | *(optional)* Spotify playlist ID — use this if auto-creation fails with a 403 (see [Spotify 403 workaround](#spotify-403-workaround)) |
+| `SPOTIFY_TOKEN_CACHE_PATH` | *(optional)* Path for the cached OAuth token. Default: `.cache/spotify_token` |
+| `SPOTIFY_SEARCH_CACHE_PATH` | *(optional)* Path for the Spotify album search cache. Default: `.cache/spotify_cache.json` |
 
 ---
 
@@ -161,6 +167,46 @@ Options:
 | `--delete-files` | Also delete files from disk. Default: remove Lidarr entries only |
 | `--verbose` / `-v` | Print each album and artist as it is deleted |
 | `--config PATH` | Path to a custom `.env` file (default: `.env`) |
+
+---
+
+### `spotify-sync` — build a Spotify playlist from your vinyl collection
+
+```bash
+uv run discogs-lidarr-sync spotify-sync
+```
+
+Fetches your Discogs vinyl collection, searches Spotify for each album, and adds all matched tracks to a playlist. The sync is additive — tracks are never removed. The playlist is created automatically if it does not exist.
+
+**First run:** a browser tab opens for Spotify OAuth login. The resulting token is cached to `.cache/spotify_token` and silently refreshed on every subsequent run.
+
+Options:
+
+| Flag | Description |
+|---|---|
+| `--dry-run` | Search Spotify and show what would be added without modifying the playlist |
+| `--rebuild` | Clear the playlist and rebuild it from scratch instead of adding incrementally |
+| `--playlist-name NAME` | Playlist name to look up or create; has no effect when `SPOTIFY_PLAYLIST_ID` is set |
+| `--verbose` / `-v` | Print each album as it is processed |
+| `--config PATH` | Path to a custom `.env` file (default: `.env`) |
+
+A colour-coded summary table is printed at the end showing how many albums were added, already present, or not found on Spotify.
+
+#### Spotify setup
+
+1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and create an app.
+2. Under **Redirect URIs** add exactly: `http://127.0.0.1:8888/callback`
+3. Copy the **Client ID** and **Client Secret** into `.env`.
+
+#### Spotify 403 workaround
+
+Spotify restricts playlist creation for apps in development mode. If `spotify-sync` exits with a 403 error:
+
+1. Create the playlist manually in the Spotify app.
+2. Open it → **···** → **Share** → **Copy link to playlist**. The URL ends with the playlist ID:
+   `https://open.spotify.com/playlist/3cEYpjA9oz9GiPac4AsH4n`
+3. Add `SPOTIFY_PLAYLIST_ID=<id>` to your `.env` file.
+4. Re-run `spotify-sync`.
 
 ---
 
